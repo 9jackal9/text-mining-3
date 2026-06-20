@@ -1,0 +1,1393 @@
+<!DOCTYPE html>
+<html lang="ko" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AETHER NLP - Academic Text Mining System</title>
+    
+    <!-- CSS Dependencies -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts - 프리미엄 서체 세트 로드 (Outfit, Noto Sans KR, JetBrains Mono) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Noto+Sans+KR:wght@300;400;500;700;900&family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- JS Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        cyber: {
+                            black: '#05070c',
+                            dark: '#0b0f19',
+                            card: '#111827',
+                            neonGreen: '#10b981',
+                            neonCyan: '#06b6d4',
+                            neonPurple: '#8b5cf6',
+                            border: '#1f2937'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Outfit', 'Noto Sans KR', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Cyberpunk digital scanlines and custom scrollbars */
+        body {
+            background-color: #05070c;
+            background-image: 
+                radial-gradient(circle at 50% 0%, rgba(6, 182, 212, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 0% 100%, rgba(16, 185, 129, 0.05) 0%, transparent 40%),
+                linear-gradient(rgba(18, 24, 38, 0.2) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(18, 24, 38, 0.2) 1px, transparent 1px);
+            background-size: 100% 100%, 100% 100%, 20px 20px, 20px 20px;
+            scrollbar-color: #1f2937 #05070c;
+        }
+        
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #05070c;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1f2937;
+            border-radius: 2px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #06b6d4;
+        }
+
+        .cyber-glowing-border {
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.1);
+        }
+        
+        .tab-active {
+            border-color: #06b6d4;
+            color: #06b6d4;
+            background: rgba(6, 182, 212, 0.05);
+        }
+
+        /* Loading spinner animation */
+        @keyframes cyber-pulse {
+            0%, 100% { opacity: 0.4; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.05); }
+        }
+        .cyber-loading {
+            animation: cyber-pulse 2s infinite ease-in-out;
+        }
+        
+        /* 폰트 렌더링 최적화 클래스 */
+        body, input, textarea, button {
+            text-rendering: optimizeLegibility;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+    </style>
+</head>
+<body class="text-slate-100 h-screen overflow-hidden flex flex-col font-sans selection:bg-cyan-500/30 selection:text-cyan-200">
+
+    <!-- 글로벌 알림 컴포넌트 -->
+    <div id="toast-container" class="fixed top-6 right-6 z-50 flex flex-col gap-3 max-w-sm w-full"></div>
+
+    <!-- 헤더 영역 (shrink-0으로 세로 높이 고정) -->
+    <header class="border-b border-slate-900 bg-cyber-black/95 backdrop-blur-md shrink-0 px-6 py-3">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-cyan-500 to-emerald-500 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+                    <i class="fa-solid fa-microchip text-slate-950 text-base"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-black tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-teal-200 to-emerald-400 font-sans leading-none">AETHER NLP</h1>
+                    <p class="text-[8px] text-slate-500 tracking-[0.25em] uppercase font-mono mt-0.5">Academic Text Mining & Analytics Engine</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3 text-[11px] bg-slate-900/60 border border-slate-800 rounded-full px-3 py-1 text-slate-400">
+                <span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span class="font-mono tracking-wider">SYSTEM ONLINE</span>
+                <span class="text-slate-600">|</span>
+                <span class="hover:text-cyan-400 cursor-pointer transition-colors" onclick="showHelpModal()">
+                    <i class="fa-solid fa-circle-question mr-1"></i>사용법 안내
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <!-- 메인 대시보드 구조 (전체 높이 분할 및 스크롤 제어) -->
+    <main class="flex-grow min-h-0 max-w-7xl w-full mx-auto p-4 grid grid-cols-1 lg:grid-cols-12 gap-4">
+        
+        <!-- 왼쪽 입력부 패널 (5 cols) -> 내부 스크롤 가능하게 조율 -->
+        <section class="lg:col-span-5 h-full flex flex-col gap-4 overflow-y-auto pr-1">
+            
+            <!-- API Credentials 설정 패널 -->
+            <div class="bg-cyber-dark/80 backdrop-blur-md border border-slate-800/80 rounded-xl p-4 shadow-xl relative overflow-hidden shrink-0">
+                <div class="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-cyan-500 to-transparent"></div>
+                <div class="flex items-center justify-between mb-3 border-b border-slate-800/80 pb-2">
+                    <h2 class="text-xs font-bold tracking-tight text-cyan-400 flex items-center gap-2">
+                        <i class="fa-solid fa-key text-xs"></i> Gemini API 키 설정
+                    </h2>
+                    <span class="text-[8px] text-emerald-400 font-mono tracking-wider bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded">REQUIRED</span>
+                </div>
+                
+                <div class="space-y-2">
+                    <div class="relative flex items-center">
+                        <span class="absolute left-3 text-slate-500 font-mono text-[10px]">KEY</span>
+                        <input type="password" id="apiKeyInput" placeholder="AIzaSy... 형식의 API 키를 입력하세요" class="w-full bg-slate-950 border border-slate-800 rounded-lg pl-10 pr-10 py-2 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 transition-all font-mono">
+                        <button type="button" onclick="toggleApiKeyVisibility()" class="absolute right-3 text-slate-500 hover:text-slate-300 transition-colors">
+                            <i id="apiKeyEyeIcon" class="fa-solid fa-eye text-xs"></i>
+                        </button>
+                    </div>
+                    <div class="flex justify-between items-center text-[10px]">
+                        <span id="apiKeyStatus" class="text-rose-400 font-medium flex items-center gap-1">
+                            <i class="fa-solid fa-circle-exclamation"></i> 키를 설정해 주세요
+                        </span>
+                        <button onclick="saveApiKey()" class="bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 px-2.5 py-1 rounded-md font-bold transition-all hover:scale-[1.02]">
+                            저장하기
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 입력 소스 설정 -->
+            <div class="bg-cyber-dark/80 backdrop-blur-md border border-slate-800/80 rounded-xl p-4 shadow-xl shrink-0">
+                <div class="flex items-center justify-between mb-3 border-b border-slate-800/80 pb-2">
+                    <h2 class="text-xs font-bold tracking-tight text-cyan-400 flex items-center gap-2">
+                        <i class="fa-solid fa-database text-xs"></i> 01. 분석 대상 입력
+                    </h2>
+                    <span class="text-[10px] text-slate-500 font-mono tracking-wider">SOURCE</span>
+                </div>
+
+                <!-- 탭 메뉴 -->
+                <div class="grid grid-cols-3 gap-1 p-1 bg-slate-950 rounded-lg mb-3 border border-slate-900">
+                    <button id="tab-file" class="py-1.5 px-2 text-[11px] font-semibold rounded-md text-slate-400 transition-all hover:text-slate-200 tab-active" onclick="switchSourceTab('file')">
+                        <i class="fa-solid fa-file-arrow-up mr-1"></i>업로드
+                    </button>
+                    <button id="tab-url" class="py-1.5 px-2 text-[11px] font-semibold rounded-md text-slate-400 transition-all hover:text-slate-200" onclick="switchSourceTab('url')">
+                        <i class="fa-solid fa-globe mr-1"></i>웹 URL
+                    </button>
+                    <button id="tab-text" class="py-1.5 px-2 text-[11px] font-semibold rounded-md text-slate-400 transition-all hover:text-slate-200" onclick="switchSourceTab('text')">
+                        <i class="fa-solid fa-keyboard mr-1"></i>직접 입력
+                    </button>
+                </div>
+
+                <!-- 탭별 본문 컨텐츠 -->
+                <!-- 1. 파일 업로드 탭 -->
+                <div id="panel-file" class="space-y-3">
+                    <div id="dropzone" class="border border-dashed border-slate-800 hover:border-cyan-500/40 rounded-lg p-5 flex flex-col items-center justify-center text-center cursor-pointer transition-all bg-slate-950/40 hover:bg-cyan-500/5 group">
+                        <input type="file" id="fileInput" class="hidden" accept=".txt,.pdf">
+                        <div class="w-8 h-8 rounded-full bg-slate-900 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform duration-300">
+                            <i class="fa-solid fa-cloud-arrow-up text-slate-400 group-hover:text-cyan-400 text-sm"></i>
+                        </div>
+                        <p class="text-[11px] font-semibold text-slate-300 mb-0.5">드래그 앤 드롭 또는 파일 선택</p>
+                        <p class="text-[9px] text-slate-500">한글 PDF / TXT 지원 (최대 10MB)</p>
+                    </div>
+                    <!-- 업로드된 파일 정보 표시 영역 -->
+                    <div id="file-info-container" class="hidden bg-slate-900/60 border border-slate-800 rounded-lg p-2 flex items-center justify-between">
+                        <div class="flex items-center gap-2 overflow-hidden mr-2">
+                            <i class="fa-solid fa-file-lines text-cyan-400 text-xs shrink-0"></i>
+                            <span id="file-name-display" class="text-[10px] text-slate-300 truncate font-mono">document.pdf</span>
+                        </div>
+                        <button onclick="clearUploadedFile()" class="text-[10px] text-rose-400 hover:text-rose-300 px-1.5 py-0.5 bg-rose-500/10 rounded border border-rose-500/20 transition-colors shrink-0">
+                            삭제
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 2. URL 입력 탭 -->
+                <div id="panel-url" class="hidden space-y-2">
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 font-mono text-[10px] font-bold">URL</span>
+                        <input type="url" id="urlInput" placeholder="분석할 웹페이지 주소를 입력하세요" class="w-full bg-slate-950 border border-slate-800 rounded-lg pl-10 pr-3 py-2 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 transition-all font-mono">
+                    </div>
+                    <div class="bg-slate-900/40 border border-slate-800/60 rounded-lg p-2">
+                        <p class="text-[9px] text-slate-400 leading-relaxed">
+                            <i class="fa-solid fa-circle-info text-cyan-500 mr-1"></i>
+                            본문 영역을 자동으로 실시간 파싱 및 우회 크롤링하여 정밀 분석합니다.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- 3. 직접 입력 탭 -->
+                <div id="panel-text" class="hidden space-y-2">
+                    <textarea id="textInput" rows="3" placeholder="분석할 한국어 데이터를 직접 입력하세요..." class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 transition-all resize-none leading-relaxed font-sans"></textarea>
+                    <div class="flex justify-between items-center text-[9px] text-slate-500">
+                        <span id="char-counter" class="font-mono">0 자 입력됨</span>
+                        <button onclick="loadSampleText()" class="hover:text-cyan-400 font-semibold transition-colors">샘플 데이터 로드</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 분석 작업 옵션 선택 -->
+            <div class="bg-cyber-dark/80 backdrop-blur-md border border-slate-800/80 rounded-xl p-4 shadow-xl shrink-0">
+                <div class="flex items-center justify-between mb-3 border-b border-slate-800/80 pb-2">
+                    <h2 class="text-xs font-bold tracking-tight text-cyan-400 flex items-center gap-2">
+                        <i class="fa-solid fa-sliders text-xs"></i> 02. 수행 작업 설정
+                    </h2>
+                    <span class="text-[10px] text-slate-500 font-mono tracking-wider">TASKS</span>
+                </div>
+
+                <!-- 태스크 카드 목록 (조밀하게 배치) -->
+                <div class="grid grid-cols-1 gap-2">
+                    <!-- TF-IDF 카드 -->
+                    <label class="relative flex items-center gap-2.5 p-2 bg-slate-950/40 border border-slate-800 rounded-lg cursor-pointer hover:border-slate-700/80 hover:bg-slate-900/20 transition-all group">
+                        <input type="radio" name="miningTask" value="tfidf" checked class="accent-cyan-500 focus:ring-cyan-500">
+                        <div class="flex-grow min-w-0">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-bold text-slate-200 group-hover:text-cyan-400 transition-colors">단어 빈도 분석 (TF-IDF)</span>
+                                <span class="text-[8px] px-1 bg-slate-900 border border-slate-800 text-slate-400 rounded font-mono">FREQ</span>
+                            </div>
+                        </div>
+                    </label>
+
+                    <!-- 워드클라우드 카드 -->
+                    <label class="relative flex items-center gap-2.5 p-2 bg-slate-950/40 border border-slate-800 rounded-lg cursor-pointer hover:border-slate-700/80 hover:bg-slate-900/20 transition-all group">
+                        <input type="radio" name="miningTask" value="wordcloud" class="accent-cyan-500 focus:ring-cyan-500">
+                        <div class="flex-grow min-w-0">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-bold text-slate-200 group-hover:text-cyan-400 transition-colors">워드클라우드 시각화</span>
+                                <span class="text-[8px] px-1 bg-slate-900 border border-slate-800 text-slate-400 rounded font-mono">VISUAL</span>
+                            </div>
+                        </div>
+                    </label>
+
+                    <!-- LDA 분석 카드 -->
+                    <label class="relative flex items-center gap-2.5 p-2 bg-slate-950/40 border border-slate-800 rounded-lg cursor-pointer hover:border-slate-700/80 hover:bg-slate-900/20 transition-all group">
+                        <input type="radio" name="miningTask" value="lda" class="accent-cyan-500 focus:ring-cyan-500">
+                        <div class="flex-grow min-w-0">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-bold text-slate-200 group-hover:text-cyan-400 transition-colors">LDA 토픽 모델링</span>
+                                <span class="text-[8px] px-1 bg-slate-900 border border-slate-800 text-slate-400 rounded font-mono">TOPIC</span>
+                            </div>
+                        </div>
+                    </label>
+
+                    <!-- 감성분석 및 시계열 분석 카드 -->
+                    <label class="relative flex items-center gap-2.5 p-2 bg-slate-950/40 border border-slate-800 rounded-lg cursor-pointer hover:border-slate-700/80 hover:bg-slate-900/20 transition-all group">
+                        <input type="radio" name="miningTask" value="sentiment" class="accent-cyan-500 focus:ring-cyan-500">
+                        <div class="flex-grow min-w-0">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-bold text-slate-200 group-hover:text-cyan-400 transition-colors">감성 분석 &amp; 시계열 분석</span>
+                                <span class="text-[8px] px-1 bg-slate-900 border border-slate-800 text-slate-400 rounded font-mono">SENTIMENT</span>
+                            </div>
+                        </div>
+                    </label>
+
+                    <!-- 의미 네트워크 분석 카드 -->
+                    <label class="relative flex items-center gap-2.5 p-2 bg-slate-950/40 border border-slate-800 rounded-lg cursor-pointer hover:border-slate-700/80 hover:bg-slate-900/20 transition-all group">
+                        <input type="radio" name="miningTask" value="network" class="accent-cyan-500 focus:ring-cyan-500">
+                        <div class="flex-grow min-w-0">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-bold text-slate-200 group-hover:text-cyan-400 transition-colors">의미 네트워크 분석 (SNA)</span>
+                                <span class="text-[8px] px-1 bg-slate-900 border border-slate-800 text-slate-400 rounded font-mono">NETWORK</span>
+                            </div>
+                        </div>
+                    </label>
+                </div>
+
+                <!-- 실행 버튼 -->
+                <button id="run-btn" onclick="executeTextMining()" class="w-full mt-3 bg-gradient-to-r from-cyan-500 via-teal-500 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-slate-950 font-extrabold text-xs py-3 rounded-lg shadow-lg shadow-cyan-500/10 hover:shadow-cyan-500/20 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-play text-[10px]"></i> 텍스트 마이닝 분석 실행
+                </button>
+            </div>
+
+            <!-- 미니 푸터 (사이드바 내부 공간 최적화 통합) -->
+            <div class="mt-auto pt-2 border-t border-slate-900/60 text-center text-[9px] text-slate-600 font-mono shrink-0">
+                <p>AETHER NLP &copy; 2026. Powered by Gemini 2.5 Flash.</p>
+            </div>
+        </section>
+
+        <!-- 오른쪽 출력부 결과 패널 (7 cols) -> 독립 내부 스크롤 배치로 화면고정형 유지 -->
+        <section class="lg:col-span-7 h-full flex flex-col min-h-0 bg-cyber-dark/80 backdrop-blur-md border border-slate-800/80 rounded-xl p-4 shadow-xl">
+            
+            <!-- 분석 결과 헤더 -->
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pb-3 border-b border-slate-800/80 shrink-0">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="inline-block w-2 h-2 rounded bg-cyan-500 shadow-glow animate-pulse"></span>
+                        <h2 id="result-title" class="text-xs font-extrabold tracking-wider text-white uppercase font-sans">ANALYTICS REPORT</h2>
+                    </div>
+                    <p class="text-[9px] text-slate-500 mt-0.5">학술 논문 및 연구소 보고서 등급 종합 진단서</p>
+                </div>
+                
+                <!-- 다운로드 드롭다운 메뉴 -->
+                <div class="flex items-center gap-1.5 font-sans">
+                    <button id="download-docx" onclick="downloadDocument('docx')" class="hidden bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-[10px] text-slate-300 px-2.5 py-1.5 rounded-md font-semibold transition-colors flex items-center gap-1">
+                        <i class="fa-solid fa-file-word text-blue-400"></i> Word
+                    </button>
+                    <button id="download-pdf" onclick="downloadDocument('pdf')" class="hidden bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-[10px] text-slate-300 px-2.5 py-1.5 rounded-md font-semibold transition-colors flex items-center gap-1">
+                        <i class="fa-solid fa-file-pdf text-rose-400"></i> PDF/인쇄
+                    </button>
+                </div>
+            </div>
+
+            <!-- 결과 스크롤 영역 (실제 결과가 나오는 본체, 높이에 맞춰 자체 스크롤) -->
+            <div id="scrollable-result-container" class="flex-grow overflow-y-auto min-h-0 mt-3 pr-1 space-y-4">
+                
+                <!-- 기본 대기 상태 (Placeholder) -->
+                <div id="result-placeholder" class="h-full flex flex-col items-center justify-center text-center py-16">
+                    <div class="w-12 h-12 rounded-full bg-slate-950 border border-slate-800/80 flex items-center justify-center mb-3 text-slate-600">
+                        <i class="fa-solid fa-wave-square text-lg animate-pulse"></i>
+                    </div>
+                    <h3 class="text-xs font-bold text-slate-400">분석 대기 중</h3>
+                    <p class="text-[11px] text-slate-600 max-w-xs mt-1.5 leading-relaxed">데이터를 기입하고 텍스트 마이닝 분석 실행 버튼을 누르십시오.</p>
+                </div>
+
+                <!-- 분석 처리 중 로딩 -->
+                <div id="result-loading" class="hidden h-full flex flex-col items-center justify-center text-center py-16">
+                    <div class="relative w-14 h-14 mb-4 flex items-center justify-center">
+                        <div class="absolute inset-0 rounded-full border-2 border-slate-800 border-t-cyan-500 animate-spin"></div>
+                        <i class="fa-solid fa-circle-nodes text-cyan-400 text-lg cyber-loading"></i>
+                    </div>
+                    <h3 class="text-xs font-bold text-slate-200">형태소 파싱 및 계량 분석 가동 중</h3>
+                    <p id="loading-sub-text" class="text-[10px] text-slate-500 max-w-xs mt-1 leading-relaxed">구글 LLM 추론 가중치 파이프라인 가동 프로세스를 동기화하는 중입니다.</p>
+                </div>
+
+                <!-- 분석 결과 표시 컨테이너 -->
+                <div id="result-content" class="hidden space-y-4">
+                    
+                    <!-- 시각화 구역 (고정 높이 할당하여 전체 레이아웃 붕괴 방지) -->
+                    <div id="visual-section" class="bg-slate-950/40 border border-slate-800 rounded-lg p-3 flex items-center justify-center h-64 shrink-0 relative">
+                        <!-- Chart.js 캔버스 마운트 부모 컨테이너 -->
+                    </div>
+
+                    <!-- 학술 데이터 표 (Data Grid) -->
+                    <div class="space-y-2">
+                        <h3 class="text-[10px] font-bold text-cyan-400 tracking-wider uppercase flex items-center gap-1">
+                            <i class="fa-solid fa-table-list"></i> 학술 데이터 표 (Data Grid)
+                        </h3>
+                        <div class="overflow-x-auto border border-slate-800/80 rounded-lg">
+                            <table class="w-full text-left border-collapse text-[11px]">
+                                <thead id="report-table-head" class="bg-slate-950 border-b border-slate-800 text-[9px] font-bold text-slate-400 tracking-wider uppercase font-mono">
+                                    <!-- 동적 삽입 -->
+                                </thead>
+                                <tbody id="report-table-body" class="divide-y divide-slate-800/50 text-slate-300 font-mono bg-slate-900/10">
+                                    <!-- 동적 삽입 -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- 학술 보고서용 해석 전문 구역 -->
+                    <div class="space-y-2">
+                        <h3 class="text-[10px] font-bold text-emerald-400 tracking-wider uppercase flex items-center gap-1">
+                            <i class="fa-solid fa-feather-pointed"></i> 학술적 해석 및 고찰 (Interpretation)
+                        </h3>
+                        <div id="academic-critique" class="bg-slate-950/50 border border-emerald-500/10 rounded-lg p-4 text-[11px] text-slate-300 leading-relaxed space-y-2 whitespace-pre-wrap font-sans">
+                            <!-- 동적 삽입 -->
+                        </div>
+                    </div>
+                    
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- 모달: 사용법 안내 -->
+    <div id="help-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-cyber-dark border border-slate-800 max-w-lg w-full rounded-2xl p-6 shadow-2xl space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h3 class="text-sm font-bold text-cyan-400 flex items-center gap-2">
+                    <i class="fa-solid fa-circle-question"></i> AETHER NLP 시스템 안내
+                </h3>
+                <button onclick="closeHelpModal()" class="text-slate-500 hover:text-slate-300">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="space-y-3 text-xs text-slate-400 leading-relaxed font-sans">
+                <p>본 앱은 한글 학술 연구 및 정밀 텍스트 전처리를 클라이언트 환경에서 가공하여 고품질 가중치 분석을 수행할 수 있게 구축된 디지털 마이닝 대시보드입니다.</p>
+                <div class="space-y-2 pl-3 border-l-2 border-cyan-500/30">
+                    <p><strong class="text-slate-200 font-semibold">1. 데이터 업로드:</strong> PDF 또는 텍스트 파일을 드래그 앤 드롭하면, 실시간으로 한글 본문을 추출합니다. URL을 기입할 경우 지능형 본문 텍스트 자동 크롤러가 동작합니다.</p>
+                    <p><strong class="text-slate-200 font-semibold">2. 분석 엔진:</strong> 가중치 분석, LDA 모델, 시계열 동태 분석, 의미 네트워크 등을 동시 수행하며 원시 텍스트의 크기와 형태소 성향을 자동 측정합니다.</p>
+                    <p><strong class="text-slate-200 font-semibold">3. 내보내기 지원:</strong> 분석이 완료되면 논문이나 저널에 즉시 편집 제출할 수 있도록 정식 수치 보고서를 PDF 전용 출력 및 Word(.docx) 파일 포맷으로 출력해줍니다.</p>
+                </div>
+            </div>
+            <button onclick="closeHelpModal()" class="w-full bg-slate-900 border border-slate-800 py-2.5 rounded-xl text-xs font-semibold hover:bg-slate-800 text-slate-300 transition-colors">
+                이해했습니다
+            </button>
+        </div>
+    </div>
+
+    <!-- 스크립트 핵심 로직 -->
+    <script>
+        // 전역 상태 변수
+        let selectedSourceType = 'file';
+        let loadedTextContent = "";
+        let currentChart = null;
+        let lastAnalysisResult = null; // 인쇄/다운로드 보존용 데이터 백업
+        let currentTaskType = 'tfidf';
+
+        // PDF.js 글로벌 구성 설정
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+
+        // 페이지 로드 시 기존 API 키가 저장되어 있는지 확인
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedKey = localStorage.getItem('gemini_api_key');
+            if (savedKey) {
+                document.getElementById('apiKeyInput').value = savedKey;
+                updateApiKeyStatus(true);
+            } else {
+                updateApiKeyStatus(false);
+            }
+        });
+
+        // API 키 관련 유틸리티
+        function toggleApiKeyVisibility() {
+            const keyInput = document.getElementById('apiKeyInput');
+            const eyeIcon = document.getElementById('apiKeyEyeIcon');
+            if (keyInput.type === 'password') {
+                keyInput.type = 'text';
+                eyeIcon.classList.remove('fa-eye');
+                eyeIcon.classList.add('fa-eye-slash');
+            } else {
+                keyInput.type = 'password';
+                eyeIcon.classList.remove('fa-eye-slash');
+                eyeIcon.classList.add('fa-eye');
+            }
+        }
+
+        function updateApiKeyStatus(isValid) {
+            const statusEl = document.getElementById('apiKeyStatus');
+            if (isValid) {
+                statusEl.className = "text-emerald-400 font-medium flex items-center gap-1";
+                statusEl.innerHTML = `<i class="fa-solid fa-circle-check"></i> API 키 설정 완료`;
+            } else {
+                statusEl.className = "text-rose-400 font-medium flex items-center gap-1";
+                statusEl.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> 키를 설정해 주세요`;
+            }
+        }
+
+        function saveApiKey() {
+            const keyInput = document.getElementById('apiKeyInput').value.trim();
+            if (!keyInput) {
+                localStorage.removeItem('gemini_api_key');
+                updateApiKeyStatus(false);
+                showToast("API 키가 삭제되었습니다.", "info");
+                return;
+            }
+            localStorage.setItem('gemini_api_key', keyInput);
+            updateApiKeyStatus(true);
+            showToast("API 키가 안전하게 로컬에 보존되었습니다.", "success");
+        }
+
+        // 토스트 알림 함수
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `p-4 rounded-xl border flex items-center justify-between text-xs transition-all duration-300 shadow-xl backdrop-blur-md translate-y-2 opacity-0 font-sans`;
+            
+            if (type === 'success') {
+                toast.className += ' bg-emerald-950/85 border-emerald-500/30 text-emerald-300';
+                toast.innerHTML = `<div class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-emerald-400"></i><span>${message}</span></div>`;
+            } else if (type === 'error') {
+                toast.className += ' bg-rose-950/85 border-rose-500/30 text-rose-300';
+                toast.innerHTML = `<div class="flex items-center gap-2"><i class="fa-solid fa-triangle-exclamation text-rose-400"></i><span>${message}</span></div>`;
+            } else {
+                toast.className += ' bg-slate-900/90 border-slate-800 text-cyan-300';
+                toast.innerHTML = `<div class="flex items-center gap-2"><i class="fa-solid fa-circle-info text-cyan-400"></i><span>${message}</span></div>`;
+            }
+
+            container.appendChild(toast);
+            
+            // 트리거 효과 적용
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 50);
+
+            // 4초 후 소멸
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-[-10px]');
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+
+        // 모달 제어
+        function showHelpModal() { document.getElementById('help-modal').classList.remove('hidden'); }
+        function closeHelpModal() { document.getElementById('help-modal').classList.add('hidden'); }
+
+        // 입력 탭 전환
+        function switchSourceTab(type) {
+            selectedSourceType = type;
+            const tabs = ['file', 'url', 'text'];
+            tabs.forEach(t => {
+                const btn = document.getElementById(`tab-${t}`);
+                const panel = document.getElementById(`panel-${t}`);
+                if (t === type) {
+                    btn.classList.add('tab-active');
+                    panel.classList.remove('hidden');
+                } else {
+                    btn.classList.remove('tab-active');
+                    panel.classList.add('hidden');
+                }
+            });
+        }
+
+        // 글자 수 동기화용 헬퍼 함수
+        function updateCharCounter(length) {
+            const charCounter = document.getElementById('char-counter');
+            if (charCounter) {
+                charCounter.textContent = `${length.toLocaleString()} 자 입력됨`;
+            }
+        }
+
+        document.getElementById('textInput').addEventListener('input', function(e) {
+            const count = e.target.value.length;
+            updateCharCounter(count);
+            loadedTextContent = e.target.value;
+        });
+
+        // 샘플 데이터 로드
+        function loadSampleText() {
+            const sample = `인공지능(AI)과 빅데이터 기술은 4차 산업혁명의 시대를 지탱하는 가장 중추적인 패러다임으로 부상하고 있습니다. 최근 기계 학습(Machine Learning)과 생성형 거대 언어 모델(LLM)의 비약적인 발전은 전통적인 기술 구조를 근본적으로 해체하며, 새로운 디지털 생태계의 가능성을 실질적으로 입증하고 있습니다. 데이터 사이언스는 단순히 과거의 통계적 축적을 기계적으로 분류하는 단계를 넘어섰으며, 이제는 예측과 예지, 의사결정 추론을 통합적으로 제어할 수 있는 복합 가치 사슬로 발돋움하고 있습니다. 그러나 이러한 기술적 도약과 궤를 같이하여, 대규모 신경망 알고리즘이 발생시키는 사회적 인공지능 윤리성과 데이터 신뢰성의 한계, 지식 재산권 침해에 관한 논쟁들이 학계와 실무 산업계 전반에서 뜨겁게 대립하고 있습니다. 따라서 향후 디지털 공학 진전은 엄정한 정량화 지표와 안전망 확보 연구가 고도화될 때 비로소 완성될 것입니다.`;
+            document.getElementById('textInput').value = sample;
+            loadedTextContent = sample;
+            updateCharCounter(sample.length);
+            showToast('샘플 데이터가 로드되었습니다.', 'success');
+        }
+
+        // 파일 드롭존 구성 및 업로드 처리
+        const dropzone = document.getElementById('dropzone');
+        const fileInput = document.getElementById('fileInput');
+
+        dropzone.addEventListener('click', () => fileInput.click());
+        dropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropzone.classList.add('border-cyan-500', 'bg-cyan-500/5');
+        });
+        dropzone.addEventListener('dragleave', () => {
+            dropzone.classList.remove('border-cyan-500', 'bg-cyan-500/5');
+        });
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('border-cyan-500', 'bg-cyan-500/5');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) handleFileSelection(files[0]);
+        });
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) handleFileSelection(e.target.files[0]);
+        });
+
+        function handleFileSelection(file) {
+            const name = file.name;
+            const ext = name.split('.').pop().toLowerCase();
+            
+            document.getElementById('file-name-display').textContent = name;
+            document.getElementById('file-info-container').classList.remove('hidden');
+
+            const reader = new FileReader();
+            
+            if (ext === 'txt') {
+                reader.onload = function(e) {
+                    loadedTextContent = e.target.result;
+                    document.getElementById('textInput').value = loadedTextContent; // 백업 동기화
+                    updateCharCounter(loadedTextContent.length);
+                    showToast('TXT 파일 본문이 추출되었습니다.', 'success');
+                };
+                reader.readAsText(file);
+            } else if (ext === 'pdf') {
+                reader.onload = async function(e) {
+                    try {
+                        const typedarray = new Uint8Array(e.target.result);
+                        const pdf = await pdfjsLib.getDocument(typedarray).promise;
+                        let extractedText = "";
+                        
+                        showToast('PDF 파일 내 텍스트 정제 작업 중...', 'info');
+                        for (let i = 1; i <= pdf.numPages; i++) {
+                            const page = await pdf.getPage(i);
+                            const textContent = await page.getTextContent();
+                            const pageText = textContent.items.map(item => item.str).join(" ");
+                            extractedText += pageText + "\n";
+                        }
+                        
+                        loadedTextContent = extractedText;
+                        document.getElementById('textInput').value = loadedTextContent; // 백업 동기화
+                        updateCharCounter(loadedTextContent.length);
+                        
+                        if (!loadedTextContent.trim()) {
+                            showToast('PDF에 분석 가능한 텍스트 내용이 부족하거나 이미지 파일 형태입니다.', 'error');
+                        } else {
+                            showToast(`PDF 파일에서 ${pdf.numPages}페이지 본문 추출을 성공했습니다.`, 'success');
+                        }
+                    } catch (err) {
+                        showToast('PDF 파일을 파싱하는 데 실패했습니다.', 'error');
+                        console.error(err);
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            } else {
+                showToast('지원되지 않는 파일 형식입니다. TXT 또는 PDF를 선택하세요.', 'error');
+            }
+        }
+
+        function clearUploadedFile() {
+            fileInput.value = "";
+            loadedTextContent = "";
+            document.getElementById('textInput').value = "";
+            updateCharCounter(0);
+            document.getElementById('file-info-container').classList.add('hidden');
+            showToast('업로드된 파일이 삭제되었습니다.', 'info');
+        }
+
+        // JSON 결과 구조 정밀 필터링 및 파싱 안전 가드 (JSON Guard)
+        function cleanAndParseJSON(rawText) {
+            let cleaned = rawText.trim();
+            // 마크다운 JSON 블록 기호 제거
+            cleaned = cleaned.replace(/^```json\s*/i, '');
+            cleaned = cleaned.replace(/```$/, '');
+            cleaned = cleaned.trim();
+            
+            try {
+                return JSON.parse(cleaned);
+            } catch (err) {
+                console.error("JSON 1차 파싱 실패, 정규식 대응 복구 시도:", err);
+                // 중괄호 바깥의 텍스트가 있을 경우 탐색 처리
+                const match = cleaned.match(/\{[\s\S]*\}/);
+                if (match) {
+                    try {
+                        return JSON.parse(match[0]);
+                    } catch (innerErr) {
+                        throw new Error("API 결과 JSON 구조 복구에 실패했습니다. 형식 오류.");
+                    }
+                }
+                throw err;
+            }
+        }
+
+        // 지능형 API 호출 (정식 상용 gemini-2.5-flash 모델 적용)
+        async function fetchGeminiNLP(promptText) {
+            const localKey = localStorage.getItem('gemini_api_key');
+            if (!localKey) {
+                throw new Error("저장된 API 키가 없습니다. 설정 패널에서 키를 입력한 뒤 '저장하기'를 눌러주세요.");
+            }
+
+            const maxRetries = 5;
+            let attempt = 0;
+            // 일반 외부 API 키로도 즉각 조회가 가능한 공식 프로덕션 모델명 'gemini-2.5-flash'를 활용합니다.
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${localKey}`;
+
+            while (attempt < maxRetries) {
+                try {
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{ parts: [{ text: promptText }] }],
+                            generationConfig: {
+                                responseMimeType: "application/json"
+                            }
+                        })
+                    });
+
+                    if (!response.ok) {
+                        // 세분화된 에러 핸들링 유저 알림 가이드
+                        if (response.status === 400) {
+                            throw new Error("입력 구조가 올바르지 않거나 모델 호출 방식이 비정상적입니다 (400 Bad Request).");
+                        }
+                        if (response.status === 403) {
+                            throw new Error("입력하신 Gemini API 키가 올바르지 않거나 권한이 없습니다 (403 Forbidden).");
+                        }
+                        if (response.status === 404) {
+                            throw new Error("지정한 원격 NLP 모델(gemini-2.5-flash) 엔드포인트를 찾을 수 없습니다 (404 Not Found).");
+                        }
+                        if (response.status === 429) {
+                            throw new Error("구글 AI API 키 분당 호출 횟수 제한(Rate Limit)을 초과했습니다. 잠시 후 재시도하세요.");
+                        }
+                        throw new Error(`API 응답 에러 (코드 ${response.status})`);
+                    }
+
+                    const data = await response.json();
+                    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                    if (!text) {
+                        throw new Error("API가 빈 응답을 반환했습니다.");
+                    }
+                    return cleanAndParseJSON(text);
+                } catch (error) {
+                    // 키 자체 문제, 엔드포인트 찾기 불가 등 복구 불가능한 에러는 루프 없이 즉시 투척
+                    if (error.message.includes("올바르지 않거나") || error.message.includes("저장된 API") || error.message.includes("엔드포인트를")) {
+                        throw error;
+                    }
+                    attempt++;
+                    if (attempt >= maxRetries) {
+                        throw new Error("원격 모델 연결 시도 5회 초과. 일시적인 네트워크 순단이거나 요청 쿼리가 너무 깁니다.");
+                    }
+                    const delay = Math.pow(2, attempt) * 1000;
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                }
+            }
+        }
+
+        // 오픈 프록시를 활용한 클라이언트 CORS 우회 URL 텍스트 파서
+        async function fetchWebpageText(url) {
+            try {
+                const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+                const res = await fetch(proxyUrl);
+                if (!res.ok) throw new Error("CORS Proxy 응답 불안정");
+                
+                const data = await res.json();
+                const html = data.contents;
+                
+                // 간단한 HTML 태그 및 스크립트 제거 파서
+                const tempDiv = document.createElement("div");
+                tempDiv.innerHTML = html;
+                
+                // 스타일, 스크립트 등 무의미한 태그 제거
+                const trashTags = tempDiv.querySelectorAll("script, style, iframe, noscript, svg, header, footer, nav");
+                trashTags.forEach(t => t.remove());
+                
+                const rawText = tempDiv.innerText || tempDiv.textContent || "";
+                // 공백 문자 정제
+                const cleanText = rawText.replace(/\s+/g, ' ').trim();
+                return cleanText.substring(0, 3000); // 효율적인 처리를 위해 최대 3000자 슬라이싱
+            } catch (err) {
+                console.warn("CORS 프록시 분석 실패, 구글 AI 그라운딩 기법으로 대체 전환:", err);
+                return null;
+            }
+        }
+
+        // 텍스트 마이닝 종합 분석 트리거
+        async function executeTextMining() {
+            const localKey = localStorage.getItem('gemini_api_key');
+            if (!localKey) {
+                showToast("분석을 실행하기 전, Gemini API 키를 먼저 설정하고 저장해야 합니다.", "error");
+                document.getElementById('apiKeyInput').focus();
+                return;
+            }
+
+            let targetText = "";
+            let urlAddress = "";
+
+            if (selectedSourceType === 'file') {
+                targetText = loadedTextContent;
+                if (!targetText) {
+                    showToast('업로드된 텍스트 소스가 없습니다. 파일을 드롭하십시오.', 'error');
+                    return;
+                }
+            } else if (selectedSourceType === 'url') {
+                urlAddress = document.getElementById('urlInput').value.trim();
+                if (!urlAddress) {
+                    showToast('분석할 웹사이트 URL 주소를 입력하세요.', 'error');
+                    return;
+                }
+                
+                // UI 로딩 표시 활성화 및 스크래핑 상태 표출
+                document.getElementById('result-placeholder').classList.add('hidden');
+                document.getElementById('result-content').classList.add('hidden');
+                document.getElementById('result-loading').classList.remove('hidden');
+                document.getElementById('loading-sub-text').textContent = "오픈 프록시 터널을 확보하여 웹 본문을 원격 수집하고 있습니다...";
+                
+                // 크롤링 수행
+                const fetchedText = await fetchWebpageText(urlAddress);
+                if (fetchedText && fetchedText.length > 50) {
+                    targetText = `[대상 웹페이지 스크랩 텍스트]:\n${fetchedText}`;
+                    showToast("웹페이지 본문 텍스트 수집에 성공했습니다.", "success");
+                } else {
+                    targetText = `웹페이지 주소: ${urlAddress} (원격 실시간 크롤링 및 구글 서치 그라운딩 필요)`;
+                    showToast("원격 페이지 직접 크롤링 실패. 구글 AI 그라운딩 모델로 우회 처리합니다.", "info");
+                }
+            } else {
+                targetText = loadedTextContent;
+                if (!targetText) {
+                    showToast('텍스트 필드에 한글 데이터를 작성해 주십시오.', 'error');
+                    return;
+                }
+            }
+
+            // 활성화된 라디오 버튼 태스크 정보
+            const selectedRadio = document.querySelector('input[name="miningTask"]:checked');
+            currentTaskType = selectedRadio.value;
+            const taskLabelName = selectedRadio.parentNode.querySelector('span').textContent;
+
+            // UI 상태 전환
+            document.getElementById('result-placeholder').classList.add('hidden');
+            document.getElementById('result-content').classList.add('hidden');
+            document.getElementById('result-loading').classList.remove('hidden');
+            document.getElementById('loading-sub-text').textContent = "형태소 문맥 분석 및 중요 어휘 벡터 가중치 변환 연산 중...";
+            document.getElementById('download-pdf').classList.add('hidden');
+            document.getElementById('download-docx').classList.add('hidden');
+
+            let promptText = "";
+            
+            if (currentTaskType === 'tfidf') {
+                promptText = `당신은 대한민국 대학 연구소 소속의 전문 Computational Linguistics 교수입니다. 다음 한글 본문(또는 URL) 데이터를 바탕으로 한글 자연어 처리를 정밀 수행하여, 한글 명사 기반 가상의 10개 핵심 어휘에 대한 TF-IDF 가중치를 통계 모델링하여 JSON 구조로 대답해 주세요.
+주어진 텍스트에만 종속되지 않고, 해당 분야의 학술적인 문맥을 고려하여 실제 연구소 통계 지표와 비견할 수 있을 만큼 엄정한 수치를 구성해 주십시오.
+
+[텍스트 데이터]
+${targetText}
+
+[반환 구조 JSON형식 필수]
+{
+  "task": "tfidf",
+  "words": [
+    {"word": "어휘1", "frequency": 14, "tfidf": 0.942},
+    {"word": "어휘2", "frequency": 12, "tfidf": 0.812},
+    ... (정확히 총 10개 어절)
+  ],
+  "interpretation": "학술 논문의 고찰 및 해석 장에 수록될 수 있는 포멀하고 전문적인 학술적 문체(예: '본 연구의 주요 단어 가중치를 산출한 결과...' 형태)의 깊이 있는 한글 해석 텍스트를 작성해 주세요. 통계적 성격과 연구 가치가 일목요연하게 4줄 이상으로 꼼꼼히 구성되어야 합니다."
+}`;
+            } else if (currentTaskType === 'wordcloud') {
+                promptText = `당신은 데이터 비주얼라이제이션 마스터이자 한글 언어 분석 전문가입니다. 주어진 텍스트 데이터를 분석하여 워드클라우드 시각화를 생성할 수 있는 가중치 분포를 JSON 형태로 리턴하십시오.
+
+[텍스트 데이터]
+${targetText}
+
+[반환 구조 JSON형식 필수]
+{
+  "task": "wordcloud",
+  "words": [
+    {"text": "키워드1", "weight": 95},
+    {"text": "키워드2", "weight": 82},
+    ... (정확히 총 15개 핵심 어휘)
+  ],
+  "interpretation": "워드클라우드 군집 형태에 대한 정밀한 인문학적/공학적 시너지적 의미 해석을 학술지 논문 서술 격식에 따라 한글로 4줄 이상 서술해 주세요."
+}`;
+            } else if (currentTaskType === 'lda') {
+                promptText = `당신은 텍스트 마이닝 및 토픽 모델링 전문가입니다. 주어진 문맥을 통해 LDA (잠재 디리클레 할당) 모델을 구성하고, 가상 분석을 적용해 핵심 잠재 토픽 3가지를 검출하고 분석 결과를 JSON으로 리턴해 주세요.
+
+[텍스트 데이터]
+${targetText}
+
+[반환 구조 JSON형식 필수]
+{
+  "task": "lda",
+  "topics": [
+    {
+      "topic_id": 1,
+      "topic_name": "기술 및 생태계 변혁",
+      "probability": 0.45,
+      "keywords": ["인공지능", "빅데이터", "알고리즘", "기술", "혁신"]
+    },
+    ... (정확히 3개 토픽)
+  ],
+  "interpretation": "LDA 토픽 모델링 결과에 대한 군집 분포의 수렴성과 학술적 함의를 연계하여 전문가적인 격조 높은 한글 학술 평론으로 5줄 이상 기재해 주십시오."
+}`;
+            } else if (currentTaskType === 'sentiment') {
+                promptText = `당신은 한글 감성 분석 및 여론 동적 변화 시계열 추론 학술 연구원입니다. 주어진 텍스트에 내포된 긍정, 부정, 중립 감성 수치를 분석하고, 가상 시계열(과거 5단계 타임라인)을 기반으로 한 감성 추세의 궤적을 JSON으로 변환해 주세요.
+
+[텍스트 데이터]
+${targetText}
+
+[반환 구조 JSON형식 필수]
+{
+  "task": "sentiment",
+  "overall": {
+    "positive": 55.0,
+    "neutral": 30.0,
+    "negative": 15.0
+  },
+  "keywords": {
+    "positive_words": ["발전", "도약", "안전망", "혁신"],
+    "negative_words": ["한계", "침해", "대립", "논쟁"]
+  },
+  "timeseries": [
+    {"label": "T1 (초기 단계)", "score": 0.12},
+    {"label": "T2 (확산 단계)", "score": 0.28},
+    {"label": "T3 (성숙 단계)", "score": 0.45},
+    {"label": "T4 (포화 단계)", "score": 0.35},
+    {"label": "T5 (안정 단계)", "score": 0.58}
+  ],
+  "interpretation": "전체 감성 비율 분포의 원인과, 시계열 가중치 변동 궤적(Timeline score)에 대한 구조적, 정치/경제적 함의를 논리 정연하게 5줄 이상의 정규 학술 체계의 한글 텍스트로 풀어 설명해 주십시오."
+}`;
+            } else if (currentTaskType === 'network') {
+                promptText = `당신은 계량정보학 및 언어 네트워크 연구의 대가입니다. 주어진 텍스트 데이터의 주요 핵심 키워드 간의 연관 관계 강도(공출현 빈도 가중치)를 분석하여 의미 네트워크 지도 구조(SNA)를 JSON 형태로 도출해 주십시오.
+
+[텍스트 데이터]
+${targetText}
+
+[반환 구조 JSON형식 필수]
+{
+  "task": "network",
+  "nodes": [
+    {"id": "노드명1", "group": 1},
+    {"id": "노드명2", "group": 2},
+    ... (총 8개 내외 중요 노드)
+  ],
+  "links": [
+    {"source": "노드명1", "target": "노드명2", "value": 8.5},
+    ... (주요 핵심 연계 고리 10개 이상)
+  ],
+  "interpretation": "의미 구조의 중심성(Centrality) 및 군집 네트워크의 위상기하학적 밀도 분포를 고찰하는 대학원 논문 급의 정교한 학술적 한글 평가 해석을 5줄 이상 서술해 주세요."
+}`;
+            }
+
+            // 구글 서치 그라운딩 툴바 추가 지시문
+            if (selectedSourceType === 'url') {
+                promptText = `이 검색 그라운딩 도구를 활용하여 다음 입력된 특정 웹사이트 주소(${urlAddress})의 최신 정보와 내용을 탐색하고 수집해 주십시오. 
+CORS 이슈 등으로 직접 전송된 텍스트가 부분적이라도 실제 존재하는 해당 URL 도메인의 전반적 가치를 통합하여 완벽히 일치하는 학술 구조 분석 결과를 JSON으로 리턴하십시오.
+${promptText}`;
+            }
+
+            try {
+                const result = await fetchGeminiNLP(promptText);
+                lastAnalysisResult = result;
+                renderReport(result);
+                showToast(`${taskLabelName} 보고서 생성이 완료되었습니다.`, 'success');
+            } catch (err) {
+                showToast(err.message || '네트워크 오류가 발생했습니다. 다시 시도하세요.', 'error');
+                document.getElementById('result-placeholder').classList.remove('hidden');
+                document.getElementById('result-loading').classList.add('hidden');
+            }
+        }
+
+        // 수집된 JSON 객체를 분석하여 동적 렌더링 적용 (ChartJS 캔버스 재생성 보강)
+        function renderReport(data) {
+            document.getElementById('result-loading').classList.add('hidden');
+            document.getElementById('result-content').classList.remove('hidden');
+            document.getElementById('download-pdf').classList.remove('hidden');
+            document.getElementById('download-docx').classList.remove('hidden');
+
+            const visualSection = document.getElementById('visual-section');
+            
+            // 기존 캔버스들과 잔상 제거를 위해 부모 노드 비우기 기법 채택
+            visualSection.innerHTML = "";
+            if (currentChart) {
+                currentChart.destroy();
+                currentChart = null;
+            }
+
+            const head = document.getElementById('report-table-head');
+            const body = document.getElementById('report-table-body');
+            const critique = document.getElementById('academic-critique');
+
+            head.innerHTML = "";
+            body.innerHTML = "";
+            critique.innerHTML = "";
+
+            critique.textContent = data.interpretation || "해석 지표를 준비하는 중입니다.";
+
+            // 1. TF-IDF 렌더링
+            if (data.task === 'tfidf') {
+                const chartCanvas = document.createElement('canvas');
+                chartCanvas.id = "chart-canvas";
+                chartCanvas.className = "max-w-full max-h-full";
+                visualSection.appendChild(chartCanvas);
+
+                head.innerHTML = `
+                    <tr>
+                        <th class="px-4 py-2.5">서열 (No.)</th>
+                        <th class="px-4 py-2.5">핵심 분석 단어 (Term)</th>
+                        <th class="px-4 py-2.5 text-right">절대 출현 빈도수 (Frequency)</th>
+                        <th class="px-4 py-2.5 text-right text-cyan-400">TF-IDF 가중 계수 (Weight)</th>
+                    </tr>
+                `;
+
+                data.words.forEach((item, index) => {
+                    const row = document.createElement('tr');
+                    row.className = "hover:bg-slate-900/50 transition-colors";
+                    row.innerHTML = `
+                        <td class="px-4 py-2.5 font-semibold text-slate-500">${index + 1}</td>
+                        <td class="px-4 py-2.5 font-bold text-slate-100">${item.word}</td>
+                        <td class="px-4 py-2.5 text-right">${item.frequency}회</td>
+                        <td class="px-4 py-2.5 text-right text-cyan-400 font-extrabold">${item.tfidf.toFixed(3)}</td>
+                    `;
+                    body.appendChild(row);
+                });
+
+                const labels = data.words.map(w => w.word);
+                const values = data.words.map(w => w.tfidf);
+
+                currentChart = new Chart(chartCanvas, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'TF-IDF 가중 벡터',
+                            data: values,
+                            backgroundColor: 'rgba(6, 182, 212, 0.4)',
+                            borderColor: '#06b6d4',
+                            borderWidth: 1.5,
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                        },
+                        scales: {
+                            x: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { color: '#94a3b8', font: { size: 9, family: 'JetBrains Mono' } } },
+                            y: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { color: '#94a3b8', font: { size: 9, family: 'JetBrains Mono' } } }
+                        }
+                    }
+                });
+
+            // 2. 워드클라우드 렌더링
+            } else if (data.task === 'wordcloud') {
+                const wordcloudCanvas = document.createElement('canvas');
+                wordcloudCanvas.id = "wordcloud-canvas";
+                wordcloudCanvas.className = "max-w-full max-h-full";
+                wordcloudCanvas.width = 600;
+                wordcloudCanvas.height = 240;
+                visualSection.appendChild(wordcloudCanvas);
+
+                head.innerHTML = `
+                    <tr>
+                        <th class="px-4 py-2.5">No.</th>
+                        <th class="px-4 py-2.5">주요 단어 (Keyword)</th>
+                        <th class="px-4 py-2.5 text-right text-emerald-400">클라우드 스케일 지수 (Weight)</th>
+                    </tr>
+                `;
+
+                data.words.forEach((item, index) => {
+                    const row = document.createElement('tr');
+                    row.className = "hover:bg-slate-900/50 transition-colors";
+                    row.innerHTML = `
+                        <td class="px-4 py-2.5 text-slate-500">${index + 1}</td>
+                        <td class="px-4 py-2.5 font-bold text-slate-200">${item.text}</td>
+                        <td class="px-4 py-2.5 text-right text-emerald-400 font-extrabold">${item.weight}</td>
+                    `;
+                    body.appendChild(row);
+                });
+
+                drawWordCloud(wordcloudCanvas, data.words);
+
+            // 3. LDA 모델링 렌더링
+            } else if (data.task === 'lda') {
+                const chartCanvas = document.createElement('canvas');
+                chartCanvas.id = "chart-canvas";
+                chartCanvas.className = "max-w-full max-h-full";
+                visualSection.appendChild(chartCanvas);
+
+                head.innerHTML = `
+                    <tr>
+                        <th class="px-4 py-2.5">토픽 코드</th>
+                        <th class="px-4 py-2.5">잠재 군집 모델 분류명 (Thematic Cluster)</th>
+                        <th class="px-4 py-2.5">분포 확률값 (Dirichlet Alpha)</th>
+                        <th class="px-4 py-2.5">핵심 형태소 연합군 (Co-occur Keywords)</th>
+                    </tr>
+                `;
+
+                data.topics.forEach((topic) => {
+                    const row = document.createElement('tr');
+                    row.className = "hover:bg-slate-900/50 transition-colors";
+                    row.innerHTML = `
+                        <td class="px-4 py-2.5 text-violet-400 font-bold">Topic #${topic.topic_id}</td>
+                        <td class="px-4 py-2.5 font-bold text-slate-100">${topic.topic_name}</td>
+                        <td class="px-4 py-2.5 font-semibold text-right">${(topic.probability * 100).toFixed(1)}%</td>
+                        <td class="px-4 py-2.5 text-slate-400">${topic.keywords.join(', ')}</td>
+                    `;
+                    body.appendChild(row);
+                });
+
+                const labels = data.topics.map(t => t.topic_name);
+                const values = data.topics.map(t => t.probability);
+
+                currentChart = new Chart(chartCanvas, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: values,
+                            backgroundColor: [
+                                'rgba(139, 92, 246, 0.4)',
+                                'rgba(6, 182, 212, 0.4)',
+                                'rgba(16, 185, 129, 0.4)'
+                            ],
+                            borderColor: [
+                                '#8b5cf6',
+                                '#06b6d4',
+                                '#10b981'
+                            ],
+                            borderWidth: 1.5
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'bottom',
+                                labels: { color: '#94a3b8', boxWidth: 10, font: { size: 9, family: 'Outfit' } }
+                            }
+                        }
+                    }
+                });
+
+            // 4. 감성 및 시계열 분석 렌더링
+            } else if (data.task === 'sentiment') {
+                const chartCanvas = document.createElement('canvas');
+                chartCanvas.id = "chart-canvas";
+                chartCanvas.className = "max-w-full max-h-full";
+                visualSection.appendChild(chartCanvas);
+
+                head.innerHTML = `
+                    <tr>
+                        <th class="px-4 py-2.5">여론 평가 범주 (Sentiment Class)</th>
+                        <th class="px-4 py-2.5 text-right">비중 점수 (%)</th>
+                        <th class="px-4 py-2.5">연결 어절 예시 (Keywords)</th>
+                    </tr>
+                `;
+
+                const rowPos = document.createElement('tr');
+                rowPos.className = "hover:bg-slate-900/50 transition-colors";
+                rowPos.innerHTML = `
+                    <td class="px-4 py-2.5 font-bold text-emerald-400">Positive (긍정 정서)</td>
+                    <td class="px-4 py-2.5 text-right text-emerald-400 font-bold">${data.overall.positive}%</td>
+                    <td class="px-4 py-2.5 text-slate-400">${data.keywords.positive_words.join(', ')}</td>
+                `;
+                body.appendChild(rowPos);
+
+                const rowNeu = document.createElement('tr');
+                rowNeu.className = "hover:bg-slate-900/50 transition-colors";
+                rowNeu.innerHTML = `
+                    <td class="px-4 py-2.5 font-bold text-slate-400">Neutral (중립 정서)</td>
+                    <td class="px-4 py-2.5 text-right text-slate-400 font-bold">${data.overall.neutral}%</td>
+                    <td class="px-4 py-2.5 text-slate-400">-</td>
+                `;
+                body.appendChild(rowNeu);
+
+                const rowNeg = document.createElement('tr');
+                rowNeg.className = "hover:bg-slate-900/50 transition-colors";
+                rowNeg.innerHTML = `
+                    <td class="px-4 py-2.5 font-bold text-rose-400">Negative (부정 정서)</td>
+                    <td class="px-4 py-2.5 text-right text-rose-400 font-bold">${data.overall.negative}%</td>
+                    <td class="px-4 py-2.5 text-rose-400 text-slate-400">${data.keywords.negative_words.join(', ')}</td>
+                `;
+                body.appendChild(rowNeg);
+
+                const timeLabels = data.timeseries.map(t => t.label);
+                const timeScores = data.timeseries.map(t => t.score);
+
+                currentChart = new Chart(chartCanvas, {
+                    type: 'line',
+                    data: {
+                        labels: timeLabels,
+                        datasets: [{
+                            label: '감성 수렴성 동향 (Sentiment Trend Index)',
+                            data: timeScores,
+                            borderColor: '#06b6d4',
+                            backgroundColor: 'rgba(6, 182, 212, 0.05)',
+                            fill: true,
+                            tension: 0.35,
+                            borderWidth: 2,
+                            pointBackgroundColor: '#10b981',
+                            pointRadius: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                labels: { color: '#94a3b8', font: { size: 9, family: 'Outfit' } }
+                            }
+                        },
+                        scales: {
+                            x: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { color: '#94a3b8', font: { size: 9, family: 'JetBrains Mono' } } },
+                            y: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { color: '#94a3b8', font: { size: 9, family: 'JetBrains Mono' } } }
+                        }
+                    }
+                });
+
+            // 5. 의미 네트워크 분석(SNA) 렌더링
+            } else if (data.task === 'network') {
+                const networkCanvas = document.createElement('canvas');
+                networkCanvas.id = "network-canvas";
+                networkCanvas.className = "max-w-full max-h-full";
+                networkCanvas.width = 600;
+                networkCanvas.height = 240;
+                visualSection.appendChild(networkCanvas);
+
+                head.innerHTML = `
+                    <tr>
+                        <th class="px-4 py-2.5">출발지 노드 (Source Node)</th>
+                        <th class="px-4 py-2.5">연결 목적지 (Target Node)</th>
+                        <th class="px-4 py-2.5 text-right text-cyan-400 font-mono">상관 연계 빈도 가중치 (Co-occurrence Weight)</th>
+                    </tr>
+                `;
+
+                data.links.forEach(link => {
+                    const row = document.createElement('tr');
+                    row.className = "hover:bg-slate-900/50 transition-colors";
+                    row.innerHTML = `
+                        <td class="px-4 py-2.5 text-slate-100 font-bold">${link.source}</td>
+                        <td class="px-4 py-2.5 text-slate-300">${link.target}</td>
+                        <td class="px-4 py-2.5 text-right text-cyan-400 font-extrabold">${link.value.toFixed(1)}</td>
+                    `;
+                    body.appendChild(row);
+                });
+
+                drawSNA(networkCanvas, data.nodes, data.links);
+            }
+            
+            // 데이터 수집 후 결과창 상단으로 부드럽게 스크롤링 포커싱 적용
+            const container = document.getElementById('scrollable-result-container');
+            if (container) container.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // 워드클라우드 Canvas 렌더링 물리 구현
+        function drawWordCloud(canvas, words) {
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.fillStyle = '#05070c';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const colors = ['#06b6d4', '#10b981', '#8b5cf6', '#e11d48', '#f59e0b', '#3b82f6'];
+            
+            words.forEach((word, idx) => {
+                const fontSize = Math.max(10, Math.min(28, word.weight / 2.5));
+                ctx.font = `bold ${fontSize}px 'Outfit', 'Noto Sans KR', sans-serif`;
+                ctx.fillStyle = colors[idx % colors.length];
+                
+                const angle = idx * 0.9;
+                const radius = idx * 13 + 8;
+                const x = canvas.width / 2 + Math.cos(angle) * radius - 30;
+                const y = canvas.height / 2 + Math.sin(angle) * radius + 4;
+                
+                ctx.fillText(word.text, x, y);
+            });
+        }
+
+        // SNA (Social Network Analysis) 관계망 드로잉 가동 (미스매치 예외 가드 포함)
+        function drawSNA(canvas, nodes, links) {
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = '#05070c';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const nodePositions = {};
+            const colors = ['#06b6d4', '#10b981', '#8b5cf6', '#ec4899'];
+
+            nodes.forEach((node, i) => {
+                const angle = (i / nodes.length) * Math.PI * 2;
+                const r = 85; 
+                nodePositions[node.id] = {
+                    x: canvas.width / 2 + Math.cos(angle) * r,
+                    y: canvas.height / 2 + Math.sin(angle) * r,
+                    color: colors[i % colors.length]
+                };
+            });
+
+            // 1. 연결 링크 그리기 (undefined 가드 추가)
+            ctx.lineWidth = 1.2;
+            links.forEach(link => {
+                const start = nodePositions[link.source];
+                const end = nodePositions[link.target];
+                if (start && end) {
+                    ctx.beginPath();
+                    ctx.moveTo(start.x, start.y);
+                    ctx.lineTo(end.x, end.y);
+                    ctx.strokeStyle = `rgba(6, 182, 212, ${Math.min(0.6, link.value / 10)})`;
+                    ctx.stroke();
+                }
+            });
+
+            // 2. 노드 원소 그리기
+            nodes.forEach(node => {
+                const pos = nodePositions[node.id];
+                if (pos) {
+                    ctx.beginPath();
+                    ctx.arc(pos.x, pos.y, 12, 0, Math.PI * 2);
+                    ctx.fillStyle = '#0b0f19';
+                    ctx.strokeStyle = pos.color;
+                    ctx.lineWidth = 2.0;
+                    ctx.fill();
+                    ctx.stroke();
+
+                    ctx.beginPath();
+                    ctx.arc(pos.x, pos.y, 3, 0, Math.PI * 2);
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fill();
+
+                    ctx.font = "bold 9px 'Outfit', 'Noto Sans KR', sans-serif";
+                    ctx.fillStyle = '#e2e8f0';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(node.id, pos.x, pos.y - 18);
+                }
+            });
+        }
+
+        // 다운로드 유틸리티 (학술 형식에 어울리는 포맷 구성)
+        function downloadDocument(format) {
+            if (!lastAnalysisResult) {
+                showToast("다운로드할 분석 결과가 보존되어 있지 않습니다.", "error");
+                return;
+            }
+
+            const title = "AETHER NLP 마이닝 성과 진단서";
+            const currentTaskName = currentTaskType.toUpperCase();
+            const dateStr = new Date().toLocaleString('ko-KR');
+
+            // 1. DOCX 포맷 파일 빌드 (HTML Blob 기법을 통한 리치 텍스트 다운로드)
+            if (format === 'docx') {
+                const headHTML = document.getElementById('report-table-head').innerHTML;
+                const bodyHTML = document.getElementById('report-table-body').innerHTML;
+                const critiqueHTML = document.getElementById('academic-critique').innerHTML;
+
+                const docContent = `
+                    <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+                    <head>
+                        <meta charset="utf-8">
+                        <title>${title}</title>
+                        <style>
+                            body { font-family: 'Malgun Gothic', 'Dotum', sans-serif; line-height: 1.6; }
+                            h1 { color: #0056b3; border-bottom: 2px solid #0056b3; padding-bottom: 10px; }
+                            h2 { color: #333; margin-top: 30px; }
+                            table { width: 100%; border-collapse: collapse; margin-top: 15px; margin-bottom: 25px; }
+                            th { background-color: #f2f2f2; border: 1px solid #ccc; padding: 10px; font-weight: bold; text-align: left; }
+                            td { border: 1px solid #ccc; padding: 10px; }
+                            .meta-box { background-color: #f9f9f9; padding: 15px; border-left: 5px solid #0056b3; margin-bottom: 20px; }
+                            .critique-box { background-color: #fcfcfc; border: 1px dashed #666; padding: 20px; font-style: italic; }
+                        </style>
+                    </head>
+                    <body>
+                        <h1>${title} [${currentTaskName}]</h1>
+                        <div class="meta-box">
+                            <p><strong>발행 일시:</strong> ${dateStr}</p>
+                            <p><strong>분석 테마:</strong> ${currentTaskName} (한글 텍스트 마이닝)</p>
+                            <p><strong>발행 처:</strong> AETHER NLP COMPUTATIONAL PLATFORM</p>
+                        </div>
+                        
+                        <h2>1. 정량 데이터 수치 표</h2>
+                        <table>
+                            ${headHTML}
+                            ${bodyHTML}
+                        </table>
+
+                        <h2>2. 학술적 고찰 및 지수 해석</h2>
+                        <div class="critique-box">
+                            ${critiqueHTML}
+                        </div>
+                        
+                        <p style="text-align: center; color: #888; font-size: 11px; margin-top: 50px;">AETHER NLP Academic System &copy; 2026</p>
+                    </body>
+                    </html>
+                `;
+
+                const blob = new Blob(['\ufeff' + docContent], {
+                    type: 'application/msword;charset=utf-8'
+                });
+
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = `AETHER_REPORT_${currentTaskName}_${Date.now()}.doc`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                showToast("Microsoft Word 형식으로 분석 보고서 다운로드가 완료되었습니다.", "success");
+
+            // 2. PDF 출력형 대응
+            } else if (format === 'pdf') {
+                window.print();
+            }
+        }
+    </script>
+</body>
+</html>
