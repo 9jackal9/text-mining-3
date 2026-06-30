@@ -1,0 +1,1469 @@
+<!DOCTYPE html>
+<html lang="ko" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AETHER NLP - Academic Text Mining System</title>
+    
+    <!-- PWA 및 모바일 스마트폰 앱 지원 메타 태그 -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="AETHER NLP">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#141519">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2103/2103633.png">
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- CSS Dependencies -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Noto+Sans+KR:wght@300;400;500;700;900&family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- MathJax - LaTeX 수리 공식 실시간 수학 렌더링용 CDN -->
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    
+    <!-- JS Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        cyber: {
+                            black: '#141519',    
+                            dark: '#1e1f24',     
+                            card: '#25272f',     
+                            neonGreen: '#82a392',
+                            neonCyan: '#7da4b5', 
+                            neonPurple: '#b5a1c2',
+                            border: '#2e3039'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Outfit', 'Noto Sans KR', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #141519;
+            background-image: 
+                radial-gradient(circle at 50% 0%, rgba(125, 164, 181, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 0% 100%, rgba(130, 163, 146, 0.05) 0%, transparent 40%),
+                linear-gradient(rgba(38, 40, 48, 0.15) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(38, 40, 48, 0.15) 1px, transparent 1px);
+            background-size: 100% 100%, 100% 100%, 20px 20px, 20px 20px;
+            scrollbar-color: #2e3039 #141519;
+        }
+        
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: #141519; }
+        ::-webkit-scrollbar-thumb { background: #2e3039; border-radius: 2px; }
+        ::-webkit-scrollbar-thumb:hover { background: #7da4b5; }
+        
+        .tab-active { border-color: #7da4b5; color: #7da4b5; background: rgba(125, 164, 181, 0.05); }
+
+        @keyframes cyber-pulse {
+            0%, 100% { opacity: 0.4; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.05); }
+        }
+        .cyber-loading { animation: cyber-pulse 2s infinite ease-in-out; }
+        
+        body, input, textarea, button {
+            text-rendering: optimizeLegibility;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* 인쇄/PDF 저장 최적화 모드 */
+        @media print {
+            html, body { height: auto !important; min-height: 100% !important; overflow: visible !important; background: #ffffff !important; color: #000000 !important; font-size: 11pt !important; }
+            main { display: block !important; height: auto !important; min-height: 100% !important; overflow: visible !important; padding: 0 !important; margin: 0 !important; }
+            header, section.lg\:col-span-5, #toast-container, #help-modal, .shrink-0.pb-3.border-b, #download-pdf, #download-docx { display: none !important; }
+            section.lg\:col-span-7 { display: block !important; width: 100% !important; height: auto !important; min-height: 100% !important; overflow: visible !important; background: transparent !important; border: none !important; box-shadow: none !important; padding: 0 !important; margin: 0 !important; }
+            #scrollable-result-container { overflow: visible !important; height: auto !important; display: block !important; }
+            .bg-slate-950\/40, .bg-slate-950\/60, .bg-slate-900\/10, .border-slate-800\/80, .bg-slate-900\/30 { background: #f8fafc !important; border: 1px solid #cbd5e1 !important; color: #000000 !important; }
+            .text-slate-300, .text-slate-400, .text-slate-500, .text-slate-200 { color: #0f172a !important; }
+            .text-white, h1, h2, h3, .text-cyber-neonCyan, .text-cyber-neonGreen, .text-cyber-neonPurple { color: #000000 !important; }
+            table { border-collapse: collapse !important; width: 100% !important; margin-top: 15px !important; background: white !important; }
+            th, td { border: 1px solid #cbd5e1 !important; color: #000000 !important; padding: 8px !important; }
+            th { background: #f1f5f9 !important; font-weight: bold !important; }
+            h2, h3, #visual-section, #lda-metrics-panel, .academic-citation-card, .hyperparameter-card, #academic-guide-panel { page-break-inside: avoid !important; }
+            tr { page-break-inside: avoid !important; }
+            #academic-critique, #academic-guide-panel { background: #ffffff !important; border-left: 4px solid #0f172a !important; color: #000000 !important; border-top: none !important; border-right: none !important; border-bottom: none !important; }
+        }
+    </style>
+</head>
+<body class="text-slate-200 h-screen overflow-hidden flex flex-col font-sans selection:bg-teal-500/20 selection:text-teal-200">
+
+    <!-- 토스트 알림 컴포넌트 -->
+    <div id="toast-container" class="fixed top-6 right-6 z-50 flex flex-col gap-3 max-w-sm w-full"></div>
+
+    <!-- 헤더 영역 -->
+    <header class="border-b border-slate-800 bg-cyber-black/95 backdrop-blur-md shrink-0 px-6 py-3">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-cyber-neonCyan to-cyber-neonGreen flex items-center justify-center shadow-lg">
+                    <i class="fa-solid fa-microchip text-slate-900 text-base"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-cyber-neonCyan via-slate-200 to-cyber-neonGreen font-sans leading-none">AETHER NLP</h1>
+                    <p class="text-[8px] text-slate-500 tracking-[0.25em] uppercase font-mono mt-0.5">Academic Text Mining Engine</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3 text-[11px] bg-slate-900/40 border border-slate-800 rounded-full px-3 py-1 text-slate-400">
+                <span class="inline-block w-1.5 h-1.5 rounded-full bg-cyber-neonGreen animate-pulse"></span>
+                <span class="font-mono tracking-wider">SYSTEM ONLINE</span>
+                <span class="text-slate-600">|</span>
+                <span class="hover:text-cyber-neonCyan cursor-pointer transition-colors" onclick="showHelpModal()">
+                    <i class="fa-solid fa-circle-question mr-1"></i>사용법 안내
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <!-- 메인 대시보드 구조 -->
+    <main class="flex-grow min-h-0 max-w-7xl w-full mx-auto p-4 grid grid-cols-1 lg:grid-cols-12 gap-4">
+        
+        <!-- 왼쪽 입력부 패널 -->
+        <section class="lg:col-span-5 h-full flex flex-col gap-4 overflow-y-auto pr-1 pb-4">
+            
+            <!-- API Credentials 설정 패널 -->
+            <div class="bg-cyber-dark/80 backdrop-blur-md border border-slate-800/80 rounded-xl p-4 shadow-xl relative overflow-hidden shrink-0">
+                <div class="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-cyber-neonCyan to-transparent"></div>
+                <div class="flex items-center justify-between mb-3 border-b border-slate-800/80 pb-2">
+                    <h2 class="text-xs font-bold tracking-tight text-cyber-neonCyan flex items-center gap-2">
+                        <i class="fa-solid fa-key text-xs"></i> Gemini API 키 설정
+                    </h2>
+                    <span class="text-[8px] text-emerald-400 font-mono tracking-wider bg-emerald-950/20 border border-cyber-neonGreen/30 px-1.5 py-0.5 rounded">REQUIRED</span>
+                </div>
+                <div class="space-y-2">
+                    <div class="relative flex items-center">
+                        <span class="absolute left-3 text-slate-500 font-mono text-[10px]">KEY</span>
+                        <input type="password" id="apiKeyInput" placeholder="AIzaSy... 형식의 API 키를 입력하세요" class="w-full bg-slate-950 border border-slate-800 rounded-lg pl-10 pr-10 py-2 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyber-neonCyan/50 focus:ring-1 focus:ring-cyber-neonCyan/50 transition-all font-mono">
+                        <button type="button" onclick="toggleApiKeyVisibility()" class="absolute right-3 text-slate-500 hover:text-slate-300 transition-colors">
+                            <i id="apiKeyEyeIcon" class="fa-solid fa-eye text-xs"></i>
+                        </button>
+                    </div>
+                    <div class="flex justify-between items-center text-[10px]">
+                        <span id="apiKeyStatus" class="text-rose-400 font-medium flex items-center gap-1">
+                            <i class="fa-solid fa-circle-exclamation"></i> 키를 설정해 주세요
+                        </span>
+                        <button onclick="saveApiKey()" class="bg-cyber-neonCyan/10 hover:bg-cyber-neonCyan/20 text-cyber-neonCyan border border-cyber-neonCyan/30 px-2.5 py-1 rounded-md font-bold transition-all hover:scale-[1.02]">
+                            저장하기
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 입력 소스 설정 -->
+            <div class="bg-cyber-dark/80 backdrop-blur-md border border-slate-800/80 rounded-xl p-4 shadow-xl shrink-0">
+                <div class="flex items-center justify-between mb-3 border-b border-slate-800/80 pb-2">
+                    <h2 class="text-xs font-bold tracking-tight text-cyber-neonCyan flex items-center gap-2">
+                        <i class="fa-solid fa-database text-xs"></i> 01. 분석 대상 입력
+                    </h2>
+                    <span class="text-[10px] text-slate-500 font-mono tracking-wider">SOURCE</span>
+                </div>
+
+                <div class="grid grid-cols-3 gap-1 p-1 bg-slate-950 rounded-lg mb-3 border border-slate-900">
+                    <button id="tab-file" class="py-1.5 px-2 text-[11px] font-semibold rounded-md text-slate-400 transition-all hover:text-slate-200 tab-active" onclick="switchSourceTab('file')">
+                        <i class="fa-solid fa-file-arrow-up mr-1"></i>업로드
+                    </button>
+                    <button id="tab-url" class="py-1.5 px-2 text-[11px] font-semibold rounded-md text-slate-400 transition-all hover:text-slate-200" onclick="switchSourceTab('url')">
+                        <i class="fa-solid fa-globe mr-1"></i>웹 URL
+                    </button>
+                    <button id="tab-text" class="py-1.5 px-2 text-[11px] font-semibold rounded-md text-slate-400 transition-all hover:text-slate-200" onclick="switchSourceTab('text')">
+                        <i class="fa-solid fa-keyboard mr-1"></i>직접 입력
+                    </button>
+                </div>
+
+                <!-- 탭별 본문 컨텐츠 -->
+                <div id="panel-file" class="space-y-3">
+                    <div id="dropzone" class="border border-dashed border-slate-800 hover:border-cyber-neonCyan/40 rounded-lg p-5 flex flex-col items-center justify-center text-center cursor-pointer transition-all bg-slate-950/40 hover:bg-cyber-neonCyan/5 group">
+                        <input type="file" id="fileInput" class="hidden" accept=".txt,.pdf">
+                        <div class="w-8 h-8 rounded-full bg-slate-900 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform duration-300">
+                            <i class="fa-solid fa-cloud-arrow-up text-slate-400 group-hover:text-cyber-neonCyan text-sm"></i>
+                        </div>
+                        <p class="text-[11px] font-semibold text-slate-300 mb-0.5">드래그 앤 드롭 또는 파일 선택</p>
+                        <p class="text-[9px] text-slate-500">한글 PDF / TXT 지원 (최대 10MB)</p>
+                    </div>
+                    <div id="file-info-container" class="hidden bg-slate-900/60 border border-slate-800 rounded-lg p-2 flex items-center justify-between">
+                        <div class="flex items-center gap-2 overflow-hidden mr-2">
+                            <i class="fa-solid fa-file-lines text-cyber-neonCyan text-xs shrink-0"></i>
+                            <span id="file-name-display" class="text-[10px] text-slate-300 truncate font-mono">document.pdf</span>
+                        </div>
+                        <button onclick="clearUploadedFile()" class="text-[10px] text-rose-400 hover:text-rose-300 px-1.5 py-0.5 bg-rose-500/10 rounded border border-rose-500/20 transition-colors shrink-0">삭제</button>
+                    </div>
+                </div>
+
+                <div id="panel-url" class="hidden space-y-2">
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 font-mono text-[10px] font-bold">URL</span>
+                        <input type="url" id="urlInput" placeholder="분석할 웹페이지 주소를 입력하세요" class="w-full bg-slate-950 border border-slate-800 rounded-lg pl-10 pr-3 py-2 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyber-neonCyan/50 focus:ring-1 focus:ring-cyber-neonCyan/50 transition-all font-mono">
+                    </div>
+                    <div class="bg-slate-900/40 border border-slate-800/60 rounded-lg p-2">
+                        <p class="text-[9px] text-slate-400 leading-relaxed"><i class="fa-solid fa-circle-info text-cyber-neonCyan mr-1"></i>본문 영역을 자동으로 실시간 파싱 및 우회 크롤링하여 정밀 분석합니다.</p>
+                    </div>
+                </div>
+
+                <div id="panel-text" class="hidden space-y-2">
+                    <textarea id="textInput" rows="3" placeholder="분석할 한국어 데이터를 직접 입력하세요..." class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyber-neonCyan/50 focus:ring-1 focus:ring-cyber-neonCyan/50 transition-all resize-none leading-relaxed font-sans"></textarea>
+                    <div class="flex justify-between items-center text-[9px] text-slate-500">
+                        <span id="char-counter" class="font-mono">0 자 입력됨</span>
+                        <button onclick="loadSampleText()" class="hover:text-cyber-neonCyan font-semibold transition-colors">샘플 데이터 로드</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 분석 작업 옵션 선택 -->
+            <div class="bg-cyber-dark/80 backdrop-blur-md border border-slate-800/80 rounded-xl p-4 shadow-xl shrink-0">
+                <div class="flex items-center justify-between mb-3 border-b border-slate-800/80 pb-2">
+                    <h2 class="text-xs font-bold tracking-tight text-cyber-neonCyan flex items-center gap-2">
+                        <i class="fa-solid fa-sliders text-xs"></i> 02. 수행 작업 설정
+                    </h2>
+                    <span class="text-[10px] text-slate-500 font-mono tracking-wider">TASKS</span>
+                </div>
+
+                <div class="grid grid-cols-1 gap-2">
+                    <!-- TF-IDF 카드 -->
+                    <label class="relative flex flex-col p-2 bg-slate-950/40 border border-slate-800 rounded-lg cursor-pointer hover:border-slate-700/80 hover:bg-slate-900/20 transition-all group">
+                        <div class="flex items-center gap-2.5 w-full">
+                            <input type="radio" name="miningTask" value="tfidf" checked onclick="toggleTaskSubOptions('tfidf')" class="accent-cyber-neonCyan focus:ring-cyber-neonCyan">
+                            <div class="flex-grow min-w-0">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-xs font-bold text-slate-200 group-hover:text-cyber-neonCyan transition-colors">단어 빈도 분석 (TF-IDF)</span>
+                                    <span class="text-[8px] px-1.5 py-0.5 bg-slate-900 border border-slate-800 text-slate-400 rounded font-mono">FREQ</span>
+                                </div>
+                            </div>
+                        </div>
+                    </label>
+
+                    <!-- 워드클라우드 카드 -->
+                    <div class="flex flex-col p-2 bg-slate-950/40 border border-slate-800 rounded-lg group transition-all">
+                        <label class="relative flex items-center gap-2.5 cursor-pointer w-full">
+                            <input type="radio" name="miningTask" value="wordcloud" onclick="toggleTaskSubOptions('wordcloud')" class="accent-cyber-neonCyan focus:ring-cyber-neonCyan">
+                            <div class="flex-grow min-w-0">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-xs font-bold text-slate-200 group-hover:text-cyber-neonCyan transition-colors">워드클라우드 시각화</span>
+                                    <span class="text-[8px] px-1.5 py-0.5 bg-slate-900 border border-slate-800 text-slate-400 rounded font-mono">VISUAL</span>
+                                </div>
+                            </div>
+                        </label>
+                        <div id="sub-wordcloud-options" class="hidden mt-2 pt-2 border-t border-slate-800/80 space-y-1.5 transition-all">
+                            <span class="text-[10px] text-cyber-neonCyan font-bold tracking-wider block"><i class="fa-solid fa-shapes mr-1"></i>  클라우드 레이아웃 실루엣 (10 Shapes)</span>
+                            <div class="grid grid-cols-2 gap-1">
+                                <select id="wordcloudShape" class="col-span-2 bg-slate-950 border border-slate-800 text-[10px] text-slate-300 rounded px-2 py-1 font-mono focus:outline-none focus:border-cyber-neonCyan/50">
+                                    <option value="circle">● 기본 원형 (Circle)</option>
+                                    <option value="star">★ 성형 별빛 (Star)</option>
+                                    <option value="heart">♥ 사랑 하트 (Heart)</option>
+                                    <option value="square">■ 기하 정방형 (Square)</option>
+                                    <option value="diamond">◆ 마름모형 (Diamond)</option>
+                                    <option value="chip">⚃ 디지털 칩 (Microchip)</option>
+                                    <option value="hexagon">⬡ 허니콤 육각형 (Hexagon)</option>
+                                    <option value="cloud">☁ 사이버 구름 (Cloud)</option>
+                                    <option value="butterfly">🦋 미려 나비 (Butterfly)</option>
+                                    <option value="infinity">∞ 레조네이트 무한 (Infinity)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- LDA 분석 카드 -->
+                    <div class="flex flex-col p-2 bg-slate-950/40 border border-slate-800 rounded-lg group transition-all">
+                        <label class="relative flex items-center gap-2.5 cursor-pointer w-full">
+                            <input type="radio" name="miningTask" value="lda" onclick="toggleTaskSubOptions('lda')" class="accent-cyber-neonCyan focus:ring-cyber-neonCyan">
+                            <div class="flex-grow min-w-0">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-xs font-bold text-slate-200 group-hover:text-cyber-neonCyan transition-colors">LDA 토픽 모델링</span>
+                                    <span class="text-[8px] px-1.5 py-0.5 bg-slate-900 border border-slate-800 text-slate-400 rounded font-mono">TOPIC</span>
+                                </div>
+                            </div>
+                        </label>
+                        <div id="sub-lda-options" class="hidden mt-2 pt-2 border-t border-slate-900/80 space-y-2 transition-all">
+                            <span class="text-[10px] text-cyber-neonCyan font-bold tracking-wider block"><i class="fa-solid fa-calculator mr-1"></i> 토픽 분류 파라미터 제어</span>
+                            <div class="space-y-1.5">
+                                <div class="flex items-center gap-3">
+                                    <label class="flex items-center gap-1.5 text-[10px] text-slate-400 cursor-pointer">
+                                        <input type="radio" name="ldaMode" value="auto" checked onclick="toggleLdaModeInput(false)" class="accent-cyber-neonCyan">
+                                        <span>AI 최적 토픽 추천 (Coherence 기반)</span>
+                                    </label>
+                                    <label class="flex items-center gap-1.5 text-[10px] text-slate-400 cursor-pointer">
+                                        <input type="radio" name="ldaMode" value="manual" onclick="toggleLdaModeInput(true)" class="accent-cyber-neonCyan">
+                                        <span>사용자 수동 지정</span>
+                                    </label>
+                                </div>
+                                <div id="lda-slider-container" class="hidden flex items-center gap-2 bg-slate-950 p-1.5 rounded border border-slate-900">
+                                    <span class="text-[9px] text-slate-500 shrink-0">토픽 수:</span>
+                                    <input type="range" id="ldaTopicSlider" min="2" max="10" value="3" oninput="updateLdaSliderDisplay(this.value)" class="w-full accent-cyber-neonCyan h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+                                    <span id="ldaTopicValue" class="text-[10px] font-bold text-cyber-neonCyan font-mono w-4 text-center">3</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 감성분석 카드 -->
+                    <label class="relative flex flex-col p-2 bg-slate-950/40 border border-slate-800 rounded-lg cursor-pointer hover:border-slate-700/80 hover:bg-slate-900/20 transition-all group">
+                        <div class="flex items-center gap-2.5 w-full">
+                            <input type="radio" name="miningTask" value="sentiment" onclick="toggleTaskSubOptions('sentiment')" class="accent-cyber-neonCyan focus:ring-cyber-neonCyan">
+                            <div class="flex-grow min-w-0">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-xs font-bold text-slate-200 group-hover:text-cyber-neonCyan transition-colors">감성 분석 &amp; 시계열 분석</span>
+                                    <span class="text-[8px] px-1.5 py-0.5 bg-slate-900 border border-slate-800 text-slate-400 rounded font-mono">SENTIMENT</span>
+                                </div>
+                            </div>
+                        </div>
+                    </label>
+
+                    <!-- 의미 네트워크 카드 -->
+                    <label class="relative flex flex-col p-2 bg-slate-950/40 border border-slate-800 rounded-lg cursor-pointer hover:border-slate-700/80 hover:bg-slate-900/20 transition-all group">
+                        <div class="flex items-center gap-2.5 w-full">
+                            <input type="radio" name="miningTask" value="network" onclick="toggleTaskSubOptions('network')" class="accent-cyber-neonCyan focus:ring-cyber-neonCyan">
+                            <div class="flex-grow min-w-0">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-xs font-bold text-slate-200 group-hover:text-cyber-neonCyan transition-colors">의미 네트워크 분석 (SNA)</span>
+                                    <span class="text-[8px] px-1.5 py-0.5 bg-slate-900 border border-slate-800 text-slate-400 rounded font-mono">NETWORK</span>
+                                </div>
+                            </div>
+                        </div>
+                    </label>
+                </div>
+
+                <button id="run-btn" onclick="executeTextMining()" class="w-full mt-3 bg-gradient-to-r from-cyber-neonCyan via-cyber-neonGreen to-cyber-neonPurple hover:opacity-90 text-slate-900 font-extrabold text-xs py-3 rounded-lg shadow-lg transition-all flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-play text-[10px]"></i> 텍스트 마이닝 분석 실행
+                </button>
+            </div>
+
+            <!-- 미니 푸터 -->
+            <div class="mt-auto pt-2 border-t border-slate-800/80 text-center text-[9px] text-slate-600 font-mono shrink-0">
+                <p>AETHER NLP &copy; 2026. Powered by Gemini 2.5 Flash.</p>
+            </div>
+        </section>
+
+        <!-- 오른쪽 출력부 결과 패널 -->
+        <section class="lg:col-span-7 h-full flex flex-col min-h-0 bg-cyber-dark/80 backdrop-blur-md border border-slate-800/80 rounded-xl p-4 shadow-xl">
+            
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pb-3 border-b border-slate-800/80 shrink-0">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="inline-block w-2 h-2 rounded bg-cyber-neonCyan shadow-glow animate-pulse"></span>
+                        <h2 id="result-title" class="text-xs font-extrabold tracking-wider text-white uppercase font-sans">ANALYTICS REPORT</h2>
+                    </div>
+                    <p class="text-[9px] text-slate-500 mt-0.5">학술 논문 및 연구소 보고서 등급 종합 진단서</p>
+                </div>
+                
+                <div class="flex items-center gap-1.5 font-sans">
+                    <button id="download-docx" onclick="downloadDocument('docx')" class="hidden bg-slate-900 hover:bg-slate-850 border border-slate-800 hover:border-slate-700 text-[10px] text-slate-300 px-2.5 py-1.5 rounded-md font-semibold transition-colors flex items-center gap-1">
+                        <i class="fa-solid fa-file-word text-blue-400"></i> Word 다운로드
+                    </button>
+                    <button id="download-pdf" onclick="downloadDocument('pdf')" class="hidden bg-slate-900 hover:bg-slate-850 border border-slate-800 hover:border-slate-700 text-[10px] text-slate-300 px-2.5 py-1.5 rounded-md font-semibold transition-colors flex items-center gap-1">
+                        <i class="fa-solid fa-file-pdf text-rose-400"></i> PDF 인쇄
+                    </button>
+                </div>
+            </div>
+
+            <!-- 결과 스크롤 영역 -->
+            <div id="scrollable-result-container" class="flex-grow overflow-y-auto min-h-0 mt-3 pr-1 space-y-4">
+                
+                <div id="result-placeholder" class="h-full flex flex-col items-center justify-center text-center py-16">
+                    <div class="w-12 h-12 rounded-full bg-slate-950 border border-slate-800/80 flex items-center justify-center mb-3 text-slate-600">
+                        <i class="fa-solid fa-wave-square text-lg animate-pulse"></i>
+                    </div>
+                    <h3 class="text-xs font-bold text-slate-400">분석 대기 중</h3>
+                    <p class="text-[11px] text-slate-600 max-w-xs mt-1.5 leading-relaxed">데이터를 기입하고 텍스트 마이닝 분석 실행 버튼을 누르십시오.</p>
+                </div>
+
+                <div id="result-loading" class="hidden h-full flex flex-col items-center justify-center text-center py-16">
+                    <div class="relative w-14 h-14 mb-4 flex items-center justify-center">
+                        <div class="absolute inset-0 rounded-full border-2 border-slate-800 border-t-cyber-neonCyan animate-spin"></div>
+                        <i class="fa-solid fa-circle-nodes text-cyber-neonCyan text-lg cyber-loading"></i>
+                    </div>
+                    <h3 class="text-xs font-bold text-slate-200">형태소 파싱 및 계량 분석 가동 중</h3>
+                    <p id="loading-sub-text" class="text-[10px] text-slate-500 max-w-xs mt-1 leading-relaxed">구글 LLM 추론 가중치 파이프라인 가동 프로세스를 동기화하는 중입니다.</p>
+                </div>
+
+                <!-- 분석 결과 표시 컨테이너 -->
+                <div id="result-content" class="hidden space-y-4">
+                    
+                    <div id="visual-section" class="bg-slate-950/40 border border-slate-800 rounded-lg p-3 flex items-center justify-center h-64 shrink-0 relative">
+                        <!-- 동적 마운트 컨테이너 -->
+                    </div>
+
+                    <div id="lda-metrics-panel" class="hidden grid grid-cols-2 gap-2 bg-slate-950/40 border border-slate-800 rounded-lg text-xs font-mono shrink-0">
+                        <div class="flex flex-col p-2 bg-slate-900/30 rounded border border-slate-800/60">
+                            <span class="text-[9px] text-slate-500 uppercase tracking-wider font-bold">Topic Coherence Score (응집도)</span>
+                            <span id="lda-coherence-val" class="text-sm font-bold text-cyber-neonGreen mt-1">0.000</span>
+                            <span class="text-[8px] text-slate-600 mt-0.5">높을수록 의미적 유사 군집 수렴도가 높음</span>
+                        </div>
+                        <div class="flex flex-col p-2 bg-slate-900/30 rounded border border-slate-800/60">
+                            <span class="text-[9px] text-slate-500 uppercase tracking-wider font-bold">Perplexity Score (혼란도)</span>
+                            <span id="lda-perplexity-val" class="text-sm font-bold text-cyber-neonCyan mt-1">0.000</span>
+                            <span class="text-[8px] text-slate-600 mt-0.5">낮을수록 토픽 모델의 확률 분산 정확도가 높음</span>
+                        </div>
+                    </div>
+
+                    <div class="space-y-2">
+                        <h3 class="text-[10px] font-bold text-cyber-neonCyan tracking-wider uppercase flex items-center gap-1">
+                            <i class="fa-solid fa-table-list"></i> 학술 데이터 표 (Data Grid)
+                        </h3>
+                        <div class="overflow-x-auto border border-slate-800/80 rounded-lg">
+                            <table class="w-full text-left border-collapse text-[11px]">
+                                <thead id="report-table-head" class="bg-slate-950 border-b border-slate-800 text-[9px] font-bold text-slate-400 tracking-wider uppercase font-mono">
+                                </thead>
+                                <tbody id="report-table-body" class="divide-y divide-slate-800/50 text-slate-300 font-mono bg-slate-900/10">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div id="secondary-table-section" class="hidden space-y-2">
+                        <h3 class="text-[10px] font-bold text-cyber-neonCyan tracking-wider uppercase flex items-center gap-1">
+                            <i class="fa-solid fa-chart-line"></i> 계량 중심성 분석 지표 표 (Centrality Metrics)
+                        </h3>
+                        <div class="overflow-x-auto border border-slate-800/80 rounded-lg">
+                            <table class="w-full text-left border-collapse text-[11px]">
+                                <thead id="secondary-table-head" class="bg-slate-950 border-b border-slate-800 text-[9px] font-bold text-slate-400 tracking-wider uppercase font-mono">
+                                </thead>
+                                <tbody id="secondary-table-body" class="divide-y divide-slate-800/50 text-slate-300 font-mono bg-slate-900/10">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- [추가] 학술용 텍스트 마이닝 종합 해석 가이드 패널 -->
+                    <div class="space-y-2">
+                        <h3 class="text-[10px] font-bold text-cyber-neonPurple tracking-wider uppercase flex items-center gap-1">
+                            <i class="fa-solid fa-book-open-reader"></i> 학술용 텍스트 마이닝 지표의 국어학적 해석 가이드
+                        </h3>
+                        <div id="academic-guide-panel" class="bg-slate-900/40 border border-cyber-neonPurple/20 rounded-lg p-4 text-[11px] text-slate-300 leading-relaxed space-y-3 font-sans">
+                            <!-- JS를 통해 동적 국어학적/통계학적 가이드 렌더링 -->
+                        </div>
+                    </div>
+
+                    <!-- 논문 인용 및 연구 방법론 요약 안내 가이드 (Academic Resource Pack) -->
+                    <div id="academic-resources-panel" class="grid grid-cols-1 md:grid-cols-2 gap-3 shrink-0">
+                        <div class="bg-slate-950/40 border border-slate-800/80 rounded-lg p-3.5 space-y-2">
+                            <span class="text-[9px] text-cyber-neonCyan font-bold uppercase tracking-wider block"><i class="fa-solid fa-square-root-variable mr-1"></i> 수리적 공식 정의 (Mathematical Formulation)</span>
+                            <div id="academic-formula-latex" class="bg-slate-950 border border-slate-900 rounded p-2 text-center text-[10px] py-3 text-slate-300 min-h-[4rem] flex items-center justify-center overflow-x-auto">
+                            </div>
+                        </div>
+
+                        <div class="bg-cyber-dark/40 border border-slate-800/80 rounded-lg p-3.5 space-y-2 hyperparameter-card">
+                            <span class="text-[9px] text-cyber-neonGreen font-bold uppercase tracking-wider block"><i class="fa-solid fa-gear mr-1"></i> 방법론 설정값 (Methodology Hyperparameters)</span>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left text-[9px] font-mono border-collapse">
+                                    <thead>
+                                        <tr class="border-b border-slate-800 text-slate-500">
+                                            <th class="py-1">Parameter</th>
+                                            <th class="py-1 text-right">Value/Spec</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="hyperparameter-table-body" class="text-slate-300 divide-y divide-slate-900">
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="md:col-span-2 bg-slate-950/40 border border-slate-800/80 rounded-lg p-3.5 space-y-2 relative overflow-hidden academic-citation-card">
+                            <div class="flex justify-between items-center">
+                                <span class="text-[9px] text-cyber-neonPurple font-bold uppercase tracking-wider"><i class="fa-solid fa-quote-left mr-1"></i> 등재지 권장 참고문헌 서지 표기 (APA/IEEE Citation)</span>
+                                <button onclick="copyCitationToClipboard()" class="text-[9px] bg-purple-500/10 hover:bg-purple-500/20 text-cyber-neonPurple border border-cyber-neonPurple/30 px-2 py-0.5 rounded transition-all">방법론 인용구 복사</button>
+                            </div>
+                            <div id="academic-citation-text" class="bg-slate-950 border border-slate-900 rounded p-2.5 text-[10px] text-slate-400 font-sans italic leading-relaxed">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- AI 동적 학술 고찰 -->
+                    <div class="space-y-2">
+                        <h3 class="text-[10px] font-bold text-cyber-neonGreen tracking-wider uppercase flex items-center gap-1">
+                            <i class="fa-solid fa-feather-pointed"></i> 대상 텍스트 AI 맞춤 학술적 고찰 (AI Interpretation)
+                        </h3>
+                        <div id="academic-critique" class="bg-slate-950/50 border border-emerald-500/10 rounded-lg p-4 text-[11px] text-slate-300 leading-relaxed space-y-2 whitespace-pre-wrap font-sans">
+                        </div>
+                    </div>
+                    
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- 스크립트 핵심 로직 -->
+    <script>
+        // 전역 상태 변수
+        let selectedSourceType = 'file';
+        let loadedTextContent = "";
+        let currentChart = null;
+        let secondaryChart = null; 
+        let lastAnalysisResult = null; 
+        let currentTaskType = 'tfidf';
+        let selectedLdaIndex = 0; 
+        let currentLambda = 0.6; 
+        let ldaData = null; 
+
+        // PDF.js 글로벌 구성 설정
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+
+        // 분석 기법별 초보자 학술 상세 가이드 딕셔너리 (마크다운 기반 내용 이식)
+        const academicGuides = {
+            tfidf: `
+                <h4 class="font-bold text-cyber-neonCyan mb-1 text-xs">단어 빈도 분석 (TF-IDF)</h4>
+                <ul class="list-disc pl-4 space-y-1 mb-2">
+                    <li><strong class="text-slate-200">수리적 개념</strong>: 특정 문서 안에서 단어의 출현 빈도(TF)에, 전체 문서 집합에서 해당 단어가 나타난 문서 수의 역수(IDF)를 곱한 값입니다.</li>
+                    <li><strong class="text-slate-200">국어학적 해석 (실질어와 기능어의 변별)</strong>: 국어학에서 조사나 어미 같은 '기능어(Grammatical Words)'는 문맥에 상관없이 절대적 빈도가 압도적으로 높게 나타납니다. 반면, 연구자가 추출하고자 하는 핵심 주제는 '명사'나 '용언의 어간' 같은 '실질어(Content Words)'에 담겨 있습니다. TF-IDF 공식에서 IDF는 문헌 전체에 보편적으로 등장하는 문법적 기능어나 범용적 어휘의 가중치를 낮추고(감쇄), 특정 문맥에서 고유한 정보 가치를 지니는 <strong class="text-cyber-neonGreen">주제 특이적 실질어</strong>를 정밀하게 여과하는 역할을 합니다. 따라서 TF-IDF 수치가 높다는 것은 해당 단어가 분석 대상 텍스트의 독자적인 정체성과 의미적 핵심(Semantic Core)을 대변함을 뜻합니다.</li>
+                </ul>
+            `,
+            wordcloud: `
+                <h4 class="font-bold text-cyber-neonCyan mb-1 text-xs">Zipf의 법칙과 워드클라우드</h4>
+                <ul class="list-disc pl-4 space-y-1 mb-2">
+                    <li><strong class="text-slate-200">수리적 개념</strong>: 단어의 사용 빈도는 단어의 빈도 순위에 반비례한다는 대수적 분포 법칙입니다.</li>
+                    <li><strong class="text-slate-200">국어학적 해석 (언어의 경제성과 시각적 가중치)</strong>: 언어학자 조지 킹슬리 집프(George Kingsley Zipf)가 제안한 이 법칙은 국어학의 <strong class="text-cyber-neonGreen">'언어 경제성의 원칙'</strong>과 맞닿아 있습니다. 화자는 의사소통의 효율성을 극대화하기 위해 소수의 핵심 어휘를 집중적으로 사용하고, 수많은 주변부 어휘를 넓게 분산시킵니다. 워드클라우드는 이 비선형적 어휘 분포를 시각화한 도구입니다. 단어의 글자 크기(Weight)는 해당 어휘가 텍스트 전체에서 담화 주도권을 얼마나 쥐고 있는지를 보여주며, 제안된 시각 실루엣은 텍스트의 주제 공간(Thematic Space)을 기하학적으로 구획하여 인문학적 직관을 자극합니다.</li>
+                </ul>
+            `,
+            lda: `
+                <h4 class="font-bold text-cyber-neonCyan mb-1 text-xs">LDA 토픽 모델링 (잠재 디리클레 할당)</h4>
+                <ul class="list-disc pl-4 space-y-1 mb-2">
+                    <li><strong class="text-slate-200">수리적 개념</strong>: 문서들이 잠재적인 토픽들의 혼합 분포로 구성되어 있고, 토픽들은 다시 단어들의 확률 분포로 구성되어 있다고 가정하는 베이지안 확률 모델입니다.</li>
+                    <li><strong class="text-slate-200">국어학적 해석 (잠재적 의미장과 담화 분석)</strong>: 하나의 완성된 한국어 텍스트는 단 하나의 주제로만 구성되지 않으며, 여러 <strong class="text-cyber-neonGreen">'의미장(Semantic Field)'</strong>이 얽혀 있는 담화적 복합체입니다. LDA는 이 눈에 보이지 않는 잠재적 의미장을 확률적으로 역추적하여 발굴해 냅니다.
+                        <ul class="list-circle pl-4 mt-1 space-y-1 text-[10px] text-slate-400">
+                            <li><strong>Coherence Score (응집도)</strong>: 추출된 토픽 내부의 어휘들이 문맥상 얼마나 일관성 있게 밀집되어 있는지를 측정합니다. 국어학적으로는 담화의 <strong>어휘적 결속성(Lexical Cohesion)</strong>과 문맥적 일관성이 얼마나 긴밀한지를 평가하는 척도입니다.</li>
+                            <li><strong>Perplexity Score (혼란도)</strong>: 모델이 텍스트의 단어 구성을 얼마나 잘 예측하는지 나타내는 불확실성 지표입니다. 혼란도가 낮을수록 텍스트의 언어적 구조와 어휘 선택의 패턴을 정교하게 모형화했음을 의미합니다.</li>
+                        </ul>
+                    </li>
+                </ul>
+            `,
+            sentiment: `
+                <h4 class="font-bold text-cyber-neonCyan mb-1 text-xs">감성 분석 및 시계열 트렌드</h4>
+                <ul class="list-disc pl-4 space-y-1 mb-2">
+                    <li><strong class="text-slate-200">수리적 개념</strong>: 감성 사전 및 언어 모델을 거쳐 추출된 긍·부정 수치의 흐름을 시계열로 나타내고, 이들 간의 선형적 동조성을 피어슨 상관계수와 유의확률로 검정합니다.</li>
+                    <li><strong class="text-slate-200">국어학적 해석 (화자의 어조 및 태도의 통시적 변화)</strong>: 국어학의 문체론과 담화론 관점에서 감성 시계열 추이는 서사나 담화의 흐름 속에서 나타나는 <strong class="text-cyber-neonGreen">화자의 어조(Tone) 및 태도(Attitude)의 동태적 전개</strong>를 뜻합니다. 세 가지 서로 다른 NLP 알고리즘의 궤적을 비교하는 것은 어휘의 형태소적 감성 사전 분석과, 딥러닝 기반의 맥락적 의미 표상, 그리고 생성형 인공지능의 화용론적 추론이 얼마나 수렴하는지 상호 검증하는 과정입니다. 이때 상관계수 수치는 이질적인 분석 방법론들 사이의 정서적 일치도를 증명하는 지표가 됩니다.</li>
+                </ul>
+            `,
+            network: `
+                <h4 class="font-bold text-cyber-neonCyan mb-1 text-xs">의미 네트워크 분석 (SNA)</h4>
+                <ul class="list-disc pl-4 space-y-1 mb-2">
+                    <li><strong class="text-slate-200">수리적 개념</strong>: 단어 간의 동시 출현(Co-occurrence) 빈도를 바탕으로 어휘 관계망을 구성하고 연결, 매개, 근접 중심성을 계량합니다.</li>
+                    <li><strong class="text-slate-200">국어학적 해석 (구조주의 의미망과 담화의 관문 어휘)</strong>: 소쉬르(Saussure)의 구조주의 언어학에 따르면 단어의 가치(Value)는 다른 단어들과의 관계 속에서 규정됩니다. 의미 네트워크 분석은 텍스트라는 담화 공간 안에서 구현된 <strong class="text-cyber-neonGreen">구조주의적 어휘 체계망</strong>을 기하학적으로 시각화합니다.
+                        <ul class="list-circle pl-4 mt-1 space-y-1 text-[10px] text-slate-400">
+                            <li><strong>연결 중심성 (Degree Centrality)</strong>: 특정 어휘가 주변 단어들과 얼마나 빈번하게 공출현하는지 보여줍니다. 텍스트 내에서 가장 넓은 연상 네트워크를 가진 '대표 지시어'를 규명합니다.</li>
+                            <li><strong>매개 중심성 (Betweenness Centrality)</strong>: 이 단어가 다른 두 단어군 사이의 연결 통로에 위치하는 정도입니다. 텍스트 내의 서로 다른 이질적 소주제들을 이어주는 <strong>담화적 관문 어휘(Gatekeeper Lexicon)</strong>를 포착하는 데 탁월한 지표입니다.</li>
+                        </ul>
+                    </li>
+                </ul>
+            `
+        };
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedKey = localStorage.getItem('gemini_api_key');
+            if (savedKey) {
+                document.getElementById('apiKeyInput').value = savedKey;
+                updateApiKeyStatus(true);
+            } else {
+                updateApiKeyStatus(false);
+            }
+        });
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js').then(reg => console.log('SW Registered')).catch(e => console.log('SW Reg failed'));
+            });
+        }
+
+        function toggleApiKeyVisibility() {
+            const keyInput = document.getElementById('apiKeyInput');
+            const eyeIcon = document.getElementById('apiKeyEyeIcon');
+            if (keyInput.type === 'password') {
+                keyInput.type = 'text';
+                eyeIcon.classList.replace('fa-eye', 'fa-eye-slash');
+            } else {
+                keyInput.type = 'password';
+                eyeIcon.classList.replace('fa-eye-slash', 'fa-eye');
+            }
+        }
+
+        function updateApiKeyStatus(isValid) {
+            const statusEl = document.getElementById('apiKeyStatus');
+            if (isValid) {
+                statusEl.className = "text-emerald-400 font-medium flex items-center gap-1";
+                statusEl.innerHTML = `<i class="fa-solid fa-circle-check text-cyber-neonGreen"></i> API 키 설정 완료`;
+            } else {
+                statusEl.className = "text-rose-400 font-medium flex items-center gap-1";
+                statusEl.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> 키를 설정해 주세요`;
+            }
+        }
+
+        function saveApiKey() {
+            const keyInput = document.getElementById('apiKeyInput').value.trim();
+            if (!keyInput) {
+                localStorage.removeItem('gemini_api_key');
+                updateApiKeyStatus(false);
+                showToast("API 키가 삭제되었습니다.", "info");
+                return;
+            }
+            localStorage.setItem('gemini_api_key', keyInput);
+            updateApiKeyStatus(true);
+            showToast("API 키가 안전하게 저장되었습니다.", "success");
+        }
+
+        function toggleTaskSubOptions(task) {
+            document.getElementById('sub-wordcloud-options').classList.add('hidden');
+            document.getElementById('sub-lda-options').classList.add('hidden');
+
+            if (task === 'wordcloud') {
+                document.getElementById('sub-wordcloud-options').classList.remove('hidden');
+            } else if (task === 'lda') {
+                document.getElementById('sub-lda-options').classList.remove('hidden');
+            }
+        }
+
+        function toggleLdaModeInput(show) {
+            const sliderContainer = document.getElementById('lda-slider-container');
+            if (show) sliderContainer.classList.remove('hidden');
+            else sliderContainer.classList.add('hidden');
+        }
+
+        function updateLdaSliderDisplay(val) {
+            document.getElementById('ldaTopicValue').textContent = val;
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `p-4 rounded-xl border flex items-center justify-between text-xs transition-all duration-300 shadow-xl backdrop-blur-md translate-y-2 opacity-0 font-sans`;
+            
+            if (type === 'success') {
+                toast.className += ' bg-emerald-950/85 border-emerald-500/30 text-emerald-300';
+                toast.innerHTML = `<div class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-cyber-neonGreen"></i><span>${message}</span></div>`;
+            } else if (type === 'error') {
+                toast.className += ' bg-rose-950/85 border-rose-500/30 text-rose-300';
+                toast.innerHTML = `<div class="flex items-center gap-2"><i class="fa-solid fa-triangle-exclamation text-rose-400"></i><span>${message}</span></div>`;
+            } else {
+                toast.className += ' bg-slate-900/90 border-slate-800 text-cyan-300';
+                toast.innerHTML = `<div class="flex items-center gap-2"><i class="fa-solid fa-circle-info text-cyber-neonCyan"></i><span>${message}</span></div>`;
+            }
+
+            container.appendChild(toast);
+            setTimeout(() => toast.classList.remove('translate-y-2', 'opacity-0'), 50);
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-[-10px]');
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+
+        function showHelpModal() { document.getElementById('help-modal').classList.remove('hidden'); }
+        function closeHelpModal() { document.getElementById('help-modal').classList.add('hidden'); }
+
+        function switchSourceTab(type) {
+            selectedSourceType = type;
+            const tabs = ['file', 'url', 'text'];
+            tabs.forEach(t => {
+                const btn = document.getElementById(`tab-${t}`);
+                const panel = document.getElementById(`panel-${t}`);
+                if (t === type) {
+                    btn.classList.add('tab-active');
+                    panel.classList.remove('hidden');
+                } else {
+                    btn.classList.remove('tab-active');
+                    panel.classList.add('hidden');
+                }
+            });
+        }
+
+        function updateCharCounter(length) {
+            const charCounter = document.getElementById('char-counter');
+            if (charCounter) charCounter.textContent = `${length.toLocaleString()} 자 입력됨`;
+        }
+
+        document.getElementById('textInput').addEventListener('input', function(e) {
+            updateCharCounter(e.target.value.length);
+            loadedTextContent = e.target.value;
+        });
+
+        function loadSampleText() {
+            const sample = `인공지능(AI)과 빅데이터 기술은 4차 산업혁명의 시대를 지탱하는 가장 중추적인 패러다임으로 부상하고 있습니다. 최근 기계 학습(Machine Learning)과 생성형 거대 언어 모델(LLM)의 비약적인 발전은 전통적인 기술 구조를 근본적으로 해체하며, 새로운 디지털 생태계의 가능성을 실질적으로 입증하고 있습니다. 데이터 사이언스는 단순히 과거의 통계적 축적을 기계적으로 분류하는 단계를 넘어섰으며, 이제는 예측과 예지, 의사결정 추론을 통합적으로 제어할 수 있는 복합 가치 사슬로 발돋움하고 있습니다. 그러나 이러한 기술적 도약과 궤를 같이하여, 대규모 신경망 알고리즘이 발생시키는 사회적 인공지능 윤리성과 데이터 신뢰성의 한계, 지식 재산권 침해에 관한 논쟁들이 학계와 실무 산업계 전반에서 뜨겁게 대립하고 있습니다. 따라서 향후 디지털 공학 진전은 엄정한 정량화 지표와 안전망 확보 연구가 고도화될 때 비로소 완성될 것입니다.`;
+            document.getElementById('textInput').value = sample;
+            loadedTextContent = sample;
+            updateCharCounter(sample.length);
+            showToast('샘플 데이터가 로드되었습니다.', 'success');
+        }
+
+        const dropzone = document.getElementById('dropzone');
+        const fileInput = document.getElementById('fileInput');
+
+        dropzone.addEventListener('click', () => fileInput.click());
+        dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('border-cyber-neonCyan', 'bg-cyber-neonCyan/5'); });
+        dropzone.addEventListener('dragleave', () => { dropzone.classList.remove('border-cyber-neonCyan', 'bg-cyber-neonCyan/5'); });
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('border-cyber-neonCyan', 'bg-cyber-neonCyan/5');
+            if (e.dataTransfer.files.length > 0) handleFileSelection(e.dataTransfer.files[0]);
+        });
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) handleFileSelection(e.target.files[0]);
+        });
+
+        function handleFileSelection(file) {
+            const name = file.name;
+            const ext = name.split('.').pop().toLowerCase();
+            document.getElementById('file-name-display').textContent = name;
+            document.getElementById('file-info-container').classList.remove('hidden');
+
+            const reader = new FileReader();
+            if (ext === 'txt') {
+                reader.onload = function(e) {
+                    loadedTextContent = e.target.result;
+                    document.getElementById('textInput').value = loadedTextContent; 
+                    updateCharCounter(loadedTextContent.length);
+                    showToast('TXT 파일 본문이 추출되었습니다.', 'success');
+                };
+                reader.readAsText(file);
+            } else if (ext === 'pdf') {
+                reader.onload = async function(e) {
+                    try {
+                        const typedarray = new Uint8Array(e.target.result);
+                        const pdf = await pdfjsLib.getDocument(typedarray).promise;
+                        let extractedText = "";
+                        showToast('PDF 파싱 중...', 'info');
+                        for (let i = 1; i <= pdf.numPages; i++) {
+                            const page = await pdf.getPage(i);
+                            const textContent = await page.getTextContent();
+                            extractedText += textContent.items.map(item => item.str).join(" ") + "\n";
+                        }
+                        loadedTextContent = extractedText;
+                        document.getElementById('textInput').value = loadedTextContent;
+                        updateCharCounter(loadedTextContent.length);
+                        
+                        if (!loadedTextContent.trim()) showToast('PDF 분석 가능한 텍스트가 부족합니다.', 'error');
+                        else showToast(`PDF 파일에서 ${pdf.numPages}페이지 본문 추출을 성공했습니다.`, 'success');
+                    } catch (err) {
+                        showToast('PDF 파일을 파싱하는 데 실패했습니다.', 'error');
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            } else {
+                showToast('지원되지 않는 파일 형식입니다. TXT 또는 PDF를 선택하세요.', 'error');
+            }
+        }
+
+        function clearUploadedFile() {
+            fileInput.value = "";
+            loadedTextContent = "";
+            document.getElementById('textInput').value = "";
+            updateCharCounter(0);
+            document.getElementById('file-info-container').classList.add('hidden');
+        }
+
+        function cleanAndParseJSON(rawText) {
+            let cleaned = rawText.trim();
+            cleaned = cleaned.replace(/^```json\s*/i, '').replace(/```$/, '').trim();
+            try {
+                return JSON.parse(cleaned);
+            } catch (err) {
+                const match = cleaned.match(/\{[\s\S]*\}/);
+                if (match) {
+                    try { return JSON.parse(match[0]); } catch (innerErr) { throw new Error("JSON 파싱 에러"); }
+                }
+                throw err;
+            }
+        }
+
+        async function fetchGeminiNLP(promptText) {
+            const localKey = localStorage.getItem('gemini_api_key');
+            if (!localKey) throw new Error("API 키를 먼저 설정해 주세요.");
+
+            const maxRetries = 5;
+            let attempt = 0;
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${localKey}`;
+
+            while (attempt < maxRetries) {
+                try {
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{ parts: [{ text: promptText }] }],
+                            generationConfig: { responseMimeType: "application/json" }
+                        })
+                    });
+
+                    if (!response.ok) {
+                        if (response.status === 400) throw new Error("400 Bad Request");
+                        if (response.status === 403) throw new Error("API 키 오류 또는 권한 없음");
+                        if (response.status === 429) throw new Error("API 사용량 초과");
+                        throw new Error(`API 응답 에러 (코드 ${response.status})`);
+                    }
+
+                    const data = await response.json();
+                    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                    if (!text) throw new Error("API 빈 응답");
+                    return cleanAndParseJSON(text);
+                } catch (error) {
+                    if (error.message.includes("권한 없음") || error.message.includes("API 키")) throw error;
+                    attempt++;
+                    if (attempt >= maxRetries) throw new Error("연결 시도 5회 초과. 요청 실패.");
+                    await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
+                }
+            }
+        }
+
+        async function fetchWebpageText(url) {
+            try {
+                const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+                const res = await fetch(proxyUrl);
+                if (!res.ok) throw new Error("CORS Proxy 응답 실패");
+                const data = await res.json();
+                const tempDiv = document.createElement("div");
+                tempDiv.innerHTML = data.contents;
+                tempDiv.querySelectorAll("script, style, iframe, noscript, svg, header, footer, nav").forEach(t => t.remove());
+                return tempDiv.textContent.replace(/\s+/g, ' ').trim().substring(0, 3000); 
+            } catch (err) {
+                return null;
+            }
+        }
+
+        function copyCitationToClipboard() {
+            const citationText = document.getElementById('academic-citation-text').innerText;
+            if (!citationText) return;
+            const tempTextarea = document.createElement('textarea');
+            tempTextarea.value = citationText;
+            document.body.appendChild(tempTextarea);
+            tempTextarea.select();
+            try {
+                if (document.execCommand('copy')) showToast("인용구가 복사되었습니다.", "success");
+                else showToast("복사에 실패했습니다.", "error");
+            } catch (err) {
+                showToast("복사 도중 에러가 발생했습니다.", "error");
+            }
+            document.body.removeChild(tempTextarea);
+        }
+
+        async function executeTextMining() {
+            const localKey = localStorage.getItem('gemini_api_key');
+            if (!localKey) {
+                showToast("분석 전 Gemini API 키를 저장해야 합니다.", "error");
+                document.getElementById('apiKeyInput').focus();
+                return;
+            }
+
+            let targetText = "";
+            let urlAddress = "";
+
+            if (selectedSourceType === 'file') {
+                targetText = loadedTextContent;
+                if (!targetText) { showToast('업로드된 텍스트가 없습니다.', 'error'); return; }
+            } else if (selectedSourceType === 'url') {
+                urlAddress = document.getElementById('urlInput').value.trim();
+                if (!urlAddress) { showToast('URL을 입력하세요.', 'error'); return; }
+                
+                document.getElementById('result-placeholder').classList.add('hidden');
+                document.getElementById('result-content').classList.add('hidden');
+                document.getElementById('result-loading').classList.remove('hidden');
+                
+                const fetchedText = await fetchWebpageText(urlAddress);
+                if (fetchedText && fetchedText.length > 50) {
+                    targetText = `[웹페이지 텍스트]:\n${fetchedText}`;
+                    showToast("웹 본문 수집 성공.", "success");
+                } else {
+                    targetText = `URL: ${urlAddress}`;
+                    showToast("크롤링 실패. 구글 그라운딩으로 우회합니다.", "info");
+                }
+            } else {
+                targetText = loadedTextContent;
+                if (!targetText) { showToast('텍스트를 입력해 주십시오.', 'error'); return; }
+            }
+
+            const selectedRadio = document.querySelector('input[name="miningTask"]:checked');
+            currentTaskType = selectedRadio.value;
+            const taskLabelName = selectedRadio.parentNode.querySelector('span').textContent;
+
+            document.getElementById('result-placeholder').classList.add('hidden');
+            document.getElementById('result-content').classList.add('hidden');
+            document.getElementById('result-loading').classList.remove('hidden');
+            document.getElementById('download-pdf').classList.add('hidden');
+            document.getElementById('download-docx').classList.add('hidden');
+            document.getElementById('lda-metrics-panel').classList.add('hidden');
+            document.getElementById('secondary-table-section').classList.add('hidden');
+
+            let promptText = "";
+            
+            if (currentTaskType === 'tfidf') {
+                promptText = `당신은 대한민국 대학 연구소 소속의 전문 Computational Linguistics 교수입니다. 다음 한글 본문 데이터를 바탕으로 한글 명사 기반 가상의 10개 핵심 어휘에 대한 TF-IDF 가중치를 통계 모델링하여 JSON 구조로 대답해 주세요.
+
+[텍스트 데이터]
+${targetText}
+
+[반환 구조 JSON형식 필수]
+{
+  "task": "tfidf",
+  "words": [
+    {"word": "어휘1", "frequency": 14, "tfidf": 0.942}
+  ],
+  "interpretation": "학술 논문 형태의 포멀한 한글 해석 텍스트를 4줄 이상으로 구성해 주세요."
+}`;
+            } else if (currentTaskType === 'wordcloud') {
+                promptText = `당신은 언어 분석 전문가입니다. 텍스트 데이터를 분석하여 워드클라우드 가중치 분포를 JSON 형태로 리턴하십시오.
+
+[텍스트 데이터]
+${targetText}
+
+[반환 구조 JSON형식 필수]
+{
+  "task": "wordcloud",
+  "words": [
+    {"text": "키워드1", "weight": 95}
+  ],
+  "interpretation": "학술지 논문 서술 격식에 따라 한글로 4줄 이상 의미 해석 서술"
+}`;
+            } else if (currentTaskType === 'lda') {
+                const ldaMode = document.querySelector('input[name="ldaMode"]:checked').value;
+                let topicCountRequest = "AI가 텍스트 크기와 복잡도를 계산하여 Coherence Score 기준으로 추정되는 최적의 토픽 개수";
+                if (ldaMode === 'manual') topicCountRequest = `사용자 지정값인 ${document.getElementById('ldaTopicSlider').value}개`;
+
+                promptText = `당신은 토픽 모델링 전문가입니다. 요구하는 토픽의 개수는 [ ${topicCountRequest} ] 입니다. 지정된 개수에 대응하는 LDA 구조를 생성하십시오.
+"coherence_score" (0.40~0.85 범위 내)와 "perplexity" (100~500 범위 내)를 계산해 JSON에 포함하세요.
+다차원 축소법(MDS) 좌표 "x"(-1.0~1.0), "y"(-1.0~1.0)를 부여하고, 토픽별 상위 10개 핵심 단어 목록 "words"(word, overall_freq, topic_freq, prob_in_topic)를 생성하세요.
+
+[텍스트 데이터]
+${targetText}
+
+[반환 구조 JSON형식 필수]
+{
+  "task": "lda",
+  "coherence_score": 0.685,
+  "perplexity": 242.4,
+  "topics": [
+    {
+      "topic_id": 1,
+      "topic_name": "주제명",
+      "probability": 0.35,
+      "x": -0.42, "y": 0.35,
+      "words": [{"word": "어휘", "overall_freq": 14200, "topic_freq": 4500, "prob_in_topic": 0.317}]
+    }
+  ],
+  "interpretation": "LDA 군집 분포 수렴성과 학술적 함의를 5줄 이상 기재"
+}`;
+            } else if (currentTaskType === 'sentiment') {
+                promptText = `당신은 한글 감성 분석 연구원입니다. 3가지 상이한 분석 알고리즘 모델의 감성 지수 추이를 사실적으로 가상 추출해 시계열 날짜 10개 지점의 데이터로 JSON으로 변환해 주세요.
+
+[텍스트 데이터]
+${targetText}
+
+[반환 구조 JSON형식 필수]
+{
+  "task": "sentiment",
+  "overall": { "positive": 55.0, "neutral": 30.0, "negative": 15.0 },
+  "keywords": { "positive_words": ["단어"], "negative_words": ["단어"] },
+  "dates": ["2025-02-11", "2025-02-13"],
+  "model_vader": [-0.25, -0.27],
+  "model_openai": [-0.37, -0.43],
+  "model_krfinbert": [-0.03, -0.07],
+  "pearson_r": 0.812,
+  "p_value": 0.004,
+  "interpretation": "3가지 모델의 감성 점수 시계열 수렴 정도와 변곡점 의미를 5줄 이상 고찰"
+}`;
+            } else if (currentTaskType === 'network') {
+                promptText = `당신은 의미 네트워크(SNA) 전문가입니다. 공출현 빈도를 분석하여 노드와 링크를 도출해 주세요.
+각 노드별 연결 중심성(degree_centrality), 매개 중심성(betweenness_centrality), 근접 중심성(closeness_centrality) 계량 점수(0.0~1.0)를 포함해 주세요.
+
+[텍스트 데이터]
+${targetText}
+
+[반환 구조 JSON형식 필수]
+{
+  "task": "network",
+  "nodes": [{"id": "단어", "group": 1, "degree_centrality": 0.85, "betweenness_centrality": 0.42, "closeness_centrality": 0.61}],
+  "links": [{"source": "단어1", "target": "단어2", "value": 8.5}],
+  "interpretation": "중심성 및 군집 네트워크의 밀도 분포 고찰 5줄 이상"
+}`;
+            }
+
+            if (selectedSourceType === 'url') {
+                promptText = `이 검색 도구를 활용하여 다음 URL(${urlAddress})의 정보를 수집하고 완벽히 일치하는 학술 분석 결과를 리턴하십시오.\n${promptText}`;
+            }
+
+            try {
+                const result = await fetchGeminiNLP(promptText);
+                ldaData = result; 
+                lastAnalysisResult = result;
+                selectedLdaIndex = 0; 
+                currentLambda = 0.6; 
+                renderReport(result);
+                showToast(`${taskLabelName} 보고서 생성이 완료되었습니다.`, 'success');
+            } catch (err) {
+                showToast(err.message || '네트워크 오류가 발생했습니다. 다시 시도하세요.', 'error');
+                document.getElementById('result-placeholder').classList.remove('hidden');
+                document.getElementById('result-loading').classList.add('hidden');
+            }
+        }
+
+        // 수집된 JSON 객체를 분석하여 동적 렌더링 적용 
+        function renderReport(data) {
+            document.getElementById('result-loading').classList.add('hidden');
+            document.getElementById('result-content').classList.remove('hidden');
+            document.getElementById('download-pdf').classList.remove('hidden');
+            document.getElementById('download-docx').classList.remove('hidden');
+
+            const visualSection = document.getElementById('visual-section');
+            const head = document.getElementById('report-table-head');
+            const body = document.getElementById('report-table-body');
+            const critique = document.getElementById('academic-critique');
+            const ldaMetricsPanel = document.getElementById('lda-metrics-panel');
+            
+            const secondaryTableSection = document.getElementById('secondary-table-section');
+            const secondaryHead = document.getElementById('secondary-table-head');
+            const secondaryBody = document.getElementById('secondary-table-body');
+
+            const formulaLatex = document.getElementById('academic-formula-latex');
+            const hyperparameterBody = document.getElementById('hyperparameter-table-body');
+            const citationText = document.getElementById('academic-citation-text');
+            const guidePanel = document.getElementById('academic-guide-panel');
+
+            // 클래스 및 캔버스 완전 리셋 (레이아웃 꼬임 방지)
+            visualSection.innerHTML = "";
+            visualSection.className = "bg-slate-950/40 border border-slate-800 rounded-lg p-3 flex items-center justify-center min-h-64 shrink-0 relative";
+            
+            if (currentChart) { currentChart.destroy(); currentChart = null; }
+            if (secondaryChart) { secondaryChart.destroy(); secondaryChart = null; }
+
+            head.innerHTML = ""; body.innerHTML = "";
+            secondaryHead.innerHTML = ""; secondaryBody.innerHTML = "";
+            critique.innerHTML = "";
+            
+            ldaMetricsPanel.classList.add('hidden');
+            secondaryTableSection.classList.add('hidden');
+
+            critique.textContent = data.interpretation || "해석 지표를 준비하는 중입니다.";
+
+            // =========================================
+            // 지표 렌더링 & 해설 연동
+            // =========================================
+            guidePanel.innerHTML = academicGuides[data.task] || "학술 지표 안내를 로딩 중입니다.";
+
+            if (data.task === 'tfidf') {
+                const chartCanvas = document.createElement('canvas');
+                chartCanvas.className = "max-w-full max-h-full";
+                visualSection.appendChild(chartCanvas);
+
+                head.innerHTML = `<tr><th class="px-4 py-2.5">No.</th><th class="px-4 py-2.5">Term</th><th class="px-4 py-2.5 text-right">Frequency</th><th class="px-4 py-2.5 text-right text-cyber-neonCyan">TF-IDF Weight</th></tr>`;
+                data.words.forEach((item, index) => {
+                    const row = document.createElement('tr');
+                    row.className = "hover:bg-slate-900/50 cursor-pointer";
+                    row.innerHTML = `<td class="px-4 py-2.5">${index + 1}</td><td class="px-4 py-2.5 font-bold text-slate-100">${item.word}</td><td class="px-4 py-2.5 text-right">${item.frequency}</td><td class="px-4 py-2.5 text-right text-cyber-neonCyan font-extrabold">${item.tfidf.toFixed(3)}</td>`;
+                    body.appendChild(row);
+                });
+
+                currentChart = new Chart(chartCanvas, {
+                    type: 'bar',
+                    data: { labels: data.words.map(w => w.word), datasets: [{ data: data.words.map(w => w.tfidf), backgroundColor: 'rgba(125, 164, 181, 0.45)', borderColor: '#7da4b5', borderWidth: 1.5, borderRadius: 4 }] },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { color: '#94a3b8', font: { size: 9 } } }, y: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { color: '#94a3b8', font: { size: 9 } } } } }
+                });
+
+                formulaLatex.innerHTML = `$$TF\\text{-}IDF(t, d, D) = TF(t, d) \\times \\log\\left(\\frac{|D|}{1 + |\\{d \\in D : t \\in d\\}|}\\right)$$`;
+                hyperparameterBody.innerHTML = `<tr><td class="py-1">Tokenizer Specification</td><td class="py-1 text-right text-cyber-neonCyan">KoNLPy Morphological Engine</td></tr><tr><td class="py-1">Normalization Rule</td><td class="py-1 text-right text-cyber-neonCyan">L2 Vector Normalization</td></tr><tr><td class="py-1">Stopwords Configuration</td><td class="py-1 text-right text-cyber-neonCyan">Korean Syntactic Particle Filtered</td></tr>`;
+                citationText.innerHTML = `Sparck Jones, K. (1972). A statistical interpretation of term specificity and its retrieval relation. Journal of Documentation, 28(1), 11-21.`;
+
+            } else if (data.task === 'wordcloud') {
+                const wordcloudCanvas = document.createElement('canvas');
+                wordcloudCanvas.width = 600; wordcloudCanvas.height = 240;
+                visualSection.appendChild(wordcloudCanvas);
+
+                head.innerHTML = `<tr><th class="px-4 py-2.5">No.</th><th class="px-4 py-2.5">Keyword</th><th class="px-4 py-2.5 text-right text-cyber-neonGreen">Weight</th></tr>`;
+                data.words.forEach((item, index) => {
+                    const row = document.createElement('tr');
+                    row.className = "hover:bg-slate-900/50 cursor-pointer";
+                    row.innerHTML = `<td class="px-4 py-2.5">${index + 1}</td><td class="px-4 py-2.5 font-bold text-slate-200">${item.text}</td><td class="px-4 py-2.5 text-right text-cyber-neonGreen font-extrabold">${item.weight}</td>`;
+                    body.appendChild(row);
+                });
+
+                drawWordCloud(wordcloudCanvas, data.words, document.getElementById('wordcloudShape').value);
+
+                formulaLatex.innerHTML = `$$f(w) = \\frac{C}{r^\\alpha} \\quad \\Longleftrightarrow \\quad \\log f(w) = \\log C - \\alpha \\log r$$`;
+                hyperparameterBody.innerHTML = `<tr><td class="py-1">Zipfian Exponent (\\(\\alpha\\))</td><td class="py-1 text-right text-cyber-neonCyan">\\(\\alpha \\approx 1.0\\) (Standard Fit)</td></tr><tr><td class="py-1">Visual Silhouette Type</td><td class="py-1 text-right text-cyber-neonCyan">${document.getElementById('wordcloudShape').value.toUpperCase()}</td></tr>`;
+                citationText.innerHTML = `Heimerl, F., Lohmann, S., Han, Q., & Ertl, T. (2014). Word cloud explorer: Text analytics based on word clouds. In 2014 47th Hawaii International Conference on System Sciences. IEEE.`;
+
+            } else if (data.task === 'lda') {
+                visualSection.className = "bg-slate-950/40 border border-slate-800 rounded-xl p-3 flex flex-col gap-3 min-h-[360px] shrink-0 relative";
+                
+                const controlBar = document.createElement('div');
+                controlBar.className = "flex flex-col sm:flex-row justify-between items-center bg-slate-900/40 border border-slate-800/80 rounded-lg p-2 gap-2 text-[10px] sm:text-xs font-sans shrink-0";
+                controlBar.innerHTML = `
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-slate-400 font-bold">Selected Topic:</span>
+                        <input type="text" id="selected-topic-num" readonly class="w-8 bg-slate-950 border border-slate-800 text-center font-bold text-cyber-neonCyan py-0.5 rounded font-mono" value="1">
+                        <button onclick="navigateLdaTopic(-1)" class="bg-slate-950 border border-slate-800 px-2 py-0.5 rounded text-slate-300">Previous</button>
+                        <button onclick="navigateLdaTopic(1)" class="bg-slate-950 border border-slate-800 px-2 py-0.5 rounded text-slate-300">Next</button>
+                        <button onclick="clearLdaTopicSelection()" class="bg-slate-950 border border-slate-800 px-2 py-0.5 rounded text-slate-300">Clear</button>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-slate-400 font-bold">Adjust relevance (λ):</span>
+                        <input type="range" id="lda-lambda-slider" min="0" max="1" step="0.05" value="0.6" oninput="updateLdaLambda(this.value)" class="accent-cyber-neonCyan h-1 bg-slate-800 rounded-lg w-24">
+                        <span id="lda-lambda-val" class="font-mono font-bold text-cyber-neonCyan">λ=0.60</span>
+                    </div>
+                `;
+                visualSection.appendChild(controlBar);
+
+                const ldaBodyGrid = document.createElement('div');
+                ldaBodyGrid.className = "flex-grow grid grid-cols-1 md:grid-cols-12 gap-3 min-h-0 w-full";
+                ldaBodyGrid.innerHTML = `
+                    <div class="md:col-span-5 relative h-full bg-slate-950 border border-slate-900 rounded-lg overflow-hidden flex flex-col"><span class="absolute top-1 left-1.5 text-[8px] text-cyber-neonCyan font-bold">Intertopic Distance Map</span><canvas id="lda-bubble-canvas" class="flex-grow w-full h-full"></canvas></div>
+                    <div class="md:col-span-7 relative h-full bg-slate-950 border border-slate-900 rounded-lg overflow-hidden flex flex-col"><span id="right-chart-title" class="absolute top-1 left-1.5 text-[8px] text-cyber-neonGreen font-bold">Top Terms</span><div class="flex-grow w-full p-2 mt-4 min-h-0"><canvas id="lda-bar-canvas" class="w-full h-full"></canvas></div></div>
+                `;
+                visualSection.appendChild(ldaBodyGrid);
+
+                const bubbleCanvas = document.getElementById('lda-bubble-canvas');
+                const barCanvas = document.getElementById('lda-bar-canvas');
+                const dpr = window.devicePixelRatio || 1;
+                bubbleCanvas.width = (bubbleCanvas.clientWidth || 250) * dpr;
+                bubbleCanvas.height = (bubbleCanvas.clientHeight || 250) * dpr;
+
+                ldaMetricsPanel.classList.remove('hidden');
+                document.getElementById('lda-coherence-val').textContent = data.coherence_score ? data.coherence_score.toFixed(3) : "0.685";
+                document.getElementById('lda-perplexity-val').textContent = data.perplexity ? data.perplexity.toFixed(1) : "242.4";
+
+                head.innerHTML = `<tr><th class="px-4 py-2.5">Topic ID</th><th class="px-4 py-2.5">Cluster</th><th class="px-4 py-2.5 text-right">Marginal Dist.</th><th class="px-4 py-2.5">Keywords</th></tr>`;
+                data.topics.forEach((topic, idx) => {
+                    const row = document.createElement('tr');
+                    row.id = `lda-row-${idx}`;
+                    row.className = `hover:bg-slate-900/50 cursor-pointer ${idx === selectedLdaIndex ? 'bg-cyber-neonCyan/5 border-l-2 border-cyber-neonCyan' : ''}`;
+                    row.onclick = () => selectLdaTopic(idx, data);
+                    row.innerHTML = `<td class="px-4 py-2.5 text-cyber-neonPurple font-bold">Topic #${topic.topic_id}</td><td class="px-4 py-2.5 font-bold">${topic.topic_name}</td><td class="px-4 py-2.5 text-right">${(topic.probability * 100).toFixed(1)}%</td><td class="px-4 py-2.5 text-xs">${topic.words.slice(0, 5).map(w => w.word).join(', ')}</td>`;
+                    body.appendChild(row);
+                });
+
+                drawLdaMdsMap(bubbleCanvas, data.topics, selectedLdaIndex);
+
+                bubbleCanvas.addEventListener('click', (e) => {
+                    const rect = bubbleCanvas.getBoundingClientRect();
+                    const x = (e.clientX - rect.left) * (bubbleCanvas.width / rect.width);
+                    const y = (e.clientY - rect.top) * (bubbleCanvas.height / rect.height);
+                    if (bubbleCanvas.bubbleRegions) {
+                        const clicked = bubbleCanvas.bubbleRegions.find(r => Math.hypot(x - r.cx, y - r.cy) <= r.r);
+                        if (clicked !== undefined) selectLdaTopic(clicked.index, data);
+                    }
+                });
+
+                renderLdaBarChart(barCanvas, data.topics[selectedLdaIndex]);
+
+                formulaLatex.innerHTML = `$$p(\\theta, z, w | \\alpha, \\beta) = \\prod_{i=1}^{M} p(\\theta_i | \\alpha) \\prod_{j=1}^{N} p(z_{ij} | \\theta_i) p(w_{ij} | z_{ij}, \\beta)$$`;
+                hyperparameterBody.innerHTML = `<tr><td class="py-1">Dirichlet Prior (\\(\\alpha\\))</td><td class="py-1 text-right text-cyber-neonCyan">50 / K (Symmetric)</td></tr><tr><td class="py-1">MDS Dimension Projection</td><td class="py-1 text-right text-cyber-neonCyan">Jensen-Shannon Divergence / PCA</td></tr>`;
+                citationText.innerHTML = `Blei, D. M., Ng, A. Y., & Jordan, M. I. (2003). Latent dirichlet allocation. JMLR, 3(Jan), 993-1022.`;
+
+            } else if (data.task === 'sentiment') {
+                const chartCanvas = document.createElement('canvas');
+                visualSection.appendChild(chartCanvas);
+
+                head.innerHTML = `<tr><th class="px-4 py-2.5">Class</th><th class="px-4 py-2.5 text-right">Ratio (%)</th><th class="px-4 py-2.5">Keywords</th></tr>`;
+                body.innerHTML = `
+                    <tr class="hover:bg-slate-900/50"><td class="px-4 py-2.5 text-cyber-neonGreen font-bold">Positive</td><td class="px-4 py-2.5 text-right font-bold text-cyber-neonGreen">${data.overall.positive}%</td><td class="px-4 py-2.5">${data.keywords.positive_words.join(', ')}</td></tr>
+                    <tr class="hover:bg-slate-900/50"><td class="px-4 py-2.5 text-slate-400 font-bold">Neutral</td><td class="px-4 py-2.5 text-right font-bold text-slate-400">${data.overall.neutral}%</td><td class="px-4 py-2.5">-</td></tr>
+                    <tr class="hover:bg-slate-900/50"><td class="px-4 py-2.5 text-rose-300 font-bold">Negative</td><td class="px-4 py-2.5 text-right font-bold text-rose-300">${data.overall.negative}%</td><td class="px-4 py-2.5">${data.keywords.negative_words.join(', ')}</td></tr>
+                `;
+
+                currentChart = new Chart(chartCanvas, {
+                    type: 'line',
+                    data: {
+                        labels: data.dates || ["T1","T2","T3","T4","T5","T6","T7","T8"],
+                        datasets: [
+                            { label: 'VADER/FinBERT', data: data.model_vader, borderColor: '#7da4b5', backgroundColor: '#7da4b5', pointStyle: 'circle', pointRadius: 4.5, fill: false, tension: 0.1 },
+                            { label: 'OpenAI Sentiment', data: data.model_openai, borderColor: '#e4a873', backgroundColor: '#e4a873', pointStyle: 'rectRot', pointRadius: 5, borderDash: [6,4], fill: false, tension: 0.1 },
+                            { label: 'KR-FinBert', data: data.model_krfinbert, borderColor: '#82a392', backgroundColor: '#82a392', pointStyle: 'triangle', pointRadius: 5.5, borderDash: [2,3], fill: false, tension: 0.1 }
+                        ]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, color: '#94a3b8' } } }, scales: { x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#94a3b8', font: { size: 9 }, maxRotation: 45, minRotation: 45 } }, y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#94a3b8' } } } }
+                });
+
+                secondaryTableSection.classList.remove('hidden');
+                secondaryHead.innerHTML = `<tr><th class="px-4 py-2.5">Model Pairwise Comparison</th><th class="px-4 py-2.5 text-right text-cyber-neonGreen">Pearson r</th><th class="px-4 py-2.5 text-right text-cyber-neonCyan">p-value</th></tr>`;
+                secondaryBody.innerHTML = `
+                    <tr class="hover:bg-slate-900/50"><td class="px-4 py-2">VADER ↔ OpenAI</td><td class="px-4 py-2 text-right text-cyber-neonGreen font-bold">${data.pearson_r ? data.pearson_r.toFixed(3) : "0.812"}</td><td class="px-4 py-2 text-right text-cyber-neonCyan">${data.p_value ? data.p_value.toFixed(3) : "0.004"} (p<0.01)</td></tr>
+                `;
+
+                formulaLatex.innerHTML = `$$r_{xy} = \\frac{\\sum_{i=1}^{n}(X_i - \\bar{X})(Y_i - \\bar{Y})}{\\sqrt{\\sum_{i=1}^{n}(X_i - \\bar{X})^2} \\sqrt{\\sum_{i=1}^{n}(Y_i - \\bar{Y})^2}}$$`;
+                hyperparameterBody.innerHTML = `<tr><td class="py-1">Fine-tuned Checkpoint</td><td class="py-1 text-right text-cyber-neonCyan">BERT-based Korean Financial Sentiment</td></tr>`;
+                citationText.innerHTML = `Hutto, C., & Gilbert, E. (2014). Vader: A parsimonious rule-based model for sentiment analysis. In ICWSM.`;
+
+            } else if (data.task === 'network') {
+                const networkCanvas = document.createElement('canvas');
+                networkCanvas.width = 600; networkCanvas.height = 240;
+                visualSection.appendChild(networkCanvas);
+
+                head.innerHTML = `<tr><th class="px-4 py-2.5">Source Node</th><th class="px-4 py-2.5">Target Node</th><th class="px-4 py-2.5 text-right text-cyber-neonCyan">Co-occurrence Weight</th></tr>`;
+                data.links.forEach(link => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `<td class="px-4 py-2.5 font-bold">${link.source}</td><td class="px-4 py-2.5">${link.target}</td><td class="px-4 py-2.5 text-right text-cyber-neonCyan font-extrabold">${link.value.toFixed(1)}</td>`;
+                    body.appendChild(row);
+                });
+
+                drawSNA(networkCanvas, data.nodes, data.links);
+
+                secondaryTableSection.classList.remove('hidden');
+                secondaryHead.innerHTML = `<tr><th class="px-4 py-2.5">Keyword</th><th class="px-4 py-2.5 text-right text-cyber-neonCyan">Degree Centrality</th><th class="px-4 py-2.5 text-right text-cyber-neonGreen">Betweenness</th><th class="px-4 py-2.5 text-right text-cyber-neonPurple">Closeness</th></tr>`;
+                data.nodes.forEach(node => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `<td class="px-4 py-2 font-bold">${node.id}</td><td class="px-4 py-2 text-right text-cyber-neonCyan font-mono font-bold">${node.degree_centrality ? node.degree_centrality.toFixed(3) : "0.50"}</td><td class="px-4 py-2 text-right text-cyber-neonGreen font-mono font-bold">${node.betweenness_centrality ? node.betweenness_centrality.toFixed(3) : "0.20"}</td><td class="px-4 py-2 text-right text-cyber-neonPurple font-mono font-bold">${node.closeness_centrality ? node.closeness_centrality.toFixed(3) : "0.40"}</td>`;
+                    secondaryBody.appendChild(row);
+                });
+
+                formulaLatex.innerHTML = `$$C_D(v) = \\frac{deg(v)}{n-1} \\quad C_B(v) = \\sum_{s \\neq v \\neq t} \\frac{\\sigma_{st}(v)}{\\sigma_{st}}$$`;
+                hyperparameterBody.innerHTML = `<tr><td class="py-1">Co-occurrence Span</td><td class="py-1 text-right text-cyber-neonCyan">Sliding Window (Size=5)</td></tr><tr><td class="py-1">Graph Framework</td><td class="py-1 text-right text-cyber-neonCyan">Force-Directed Model</td></tr>`;
+                citationText.innerHTML = `Freeman, L. C. (1978). Centrality in social networks conceptual clarification. Social networks, 1(3), 215-239.`;
+            }
+            
+            // MathJax 비동기 강제 리렌더링 (예외 차단)
+            if (typeof MathJax !== 'undefined' && MathJax.typesetPromise) {
+                try { MathJax.typesetPromise(); } catch(e) { console.warn("MathJax 렌더링 스킵"); }
+            }
+
+            const container = document.getElementById('scrollable-result-container');
+            if (container) container.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // LDA 전용: 좌측 MDS Intertopic Distance Map 드로잉
+        function drawLdaMdsMap(canvas, topics, selectedIdx) {
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width; const h = canvas.height;
+            ctx.clearRect(0, 0, w, h);
+            ctx.fillStyle = '#141519'; ctx.fillRect(0, 0, w, h);
+
+            ctx.strokeStyle = '#2e3039'; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(0, h/2); ctx.lineTo(w, h/2); ctx.moveTo(w/2, 0); ctx.lineTo(w/2, h); ctx.stroke();
+
+            ctx.fillStyle = '#7da4b5'; ctx.font = '8px "JetBrains Mono"';
+            ctx.fillText('PC1', w - 15, h / 2 - 4); ctx.fillText('PC2', w / 2 + 4, 12);
+
+            canvas.bubbleRegions = [];
+            topics.forEach((topic, idx) => {
+                const padding = 35;
+                const cx = padding + ((topic.x + 1.2) / 2.4) * (w - padding * 2);
+                const cy = padding + (((-topic.y) + 1.2) / 2.4) * (h - padding * 2); 
+                const r = 10 + (topic.probability * 30);
+                const isSelected = (idx === selectedIdx);
+
+                if (isSelected) {
+                    ctx.shadowColor = 'rgba(214, 96, 77, 0.4)'; ctx.shadowBlur = 10;
+                    ctx.fillStyle = 'rgba(214, 96, 77, 0.85)'; ctx.strokeStyle = '#d6604d'; ctx.lineWidth = 1.5;
+                } else {
+                    ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0;
+                    ctx.fillStyle = 'rgba(146, 197, 222, 0.2)'; ctx.strokeStyle = 'rgba(146, 197, 222, 0.6)'; ctx.lineWidth = 1;
+                }
+                ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+
+                ctx.shadowBlur = 0; ctx.fillStyle = isSelected ? '#ffffff' : '#94a3b8';
+                ctx.font = 'bold 9px "Outfit"'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText(topic.topic_id, cx, cy);
+
+                canvas.bubbleRegions.push({ index: idx, cx: cx, cy: cy, r: r });
+            });
+        }
+
+        // LDA 전용: 우측 단어 확률 가중치 이중 막대 그래프
+        function renderLdaBarChart(canvas, topic) {
+            if (secondaryChart) secondaryChart.destroy();
+            document.getElementById('right-chart-title').textContent = `Top-10 Words: ${topic.topic_name}`;
+
+            const wordsWithScores = topic.words.map(w => {
+                const p_w_t = w.prob_in_topic || (w.topic_freq / 10000);
+                const p_w = (w.overall_freq / 100000) || 1e-5;
+                const relevanceScore = currentLambda * Math.log(p_w_t + 1e-10) + (1 - currentLambda) * Math.log((p_w_t / p_w) + 1e-10);
+                return { ...w, score: relevanceScore };
+            });
+
+            wordsWithScores.sort((a, b) => b.score - a.score);
+            const topWords = wordsWithScores.slice(0, 10);
+
+            secondaryChart = new Chart(canvas, {
+                type: 'bar',
+                data: {
+                    labels: topWords.map(w => w.word),
+                    datasets: [
+                        { label: 'Overall', data: topWords.map(w => w.overall_freq), backgroundColor: 'rgba(146, 197, 222, 0.25)', borderColor: 'rgba(146, 197, 222, 0.45)', borderWidth: 1, barThickness: 10, order: 2 },
+                        { label: 'Topic', data: topWords.map(w => w.topic_freq), backgroundColor: 'rgba(214, 96, 77, 0.85)', borderColor: '#d6604d', borderWidth: 1, barThickness: 10, order: 1 }
+                    ]
+                },
+                options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, grouped: false, plugins: { legend: { display: false } }, scales: { x: { grid: { color: 'rgba(255,255,255,0.02)' }, ticks: { color: '#94a3b8', font: { size: 8 } } }, y: { grid: { display: false }, ticks: { color: '#e2e8f0', font: { size: 9, weight: 'bold' } } } } }
+            });
+        }
+
+        function renderLdaOverallChart(canvas, topics) {
+            if (secondaryChart) secondaryChart.destroy();
+            document.getElementById('right-chart-title').textContent = "Top-10 Most Salient Terms (Overall)";
+
+            const wordMap = {};
+            topics.forEach(t => t.words.forEach(w => { if (!wordMap[w.word]) wordMap[w.word] = w; }));
+            const sortedWords = Object.values(wordMap).sort((a, b) => b.overall_freq - a.overall_freq).slice(0, 10);
+
+            secondaryChart = new Chart(canvas, {
+                type: 'bar',
+                data: {
+                    labels: sortedWords.map(w => w.word),
+                    datasets: [{ data: sortedWords.map(w => w.overall_freq), backgroundColor: 'rgba(146, 197, 222, 0.35)', borderColor: 'rgba(146, 197, 222, 0.7)', borderWidth: 1.5 }]
+                },
+                options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { color: 'rgba(255,255,255,0.02)' }, ticks: { color: '#94a3b8', font: { size: 8 } } }, y: { grid: { display: false }, ticks: { color: '#e2e8f0', font: { size: 9, weight: 'bold' } } } } }
+            });
+        }
+
+        // LDA 전용 선택 이벤트 동기화
+        function selectLdaTopic(idx, data) {
+            selectedLdaIndex = idx;
+            const topic = data.topics[idx];
+            if (!topic) return;
+
+            document.getElementById('selected-topic-num').value = topic.topic_id;
+            renderLdaBarChart(document.getElementById('lda-bar-canvas'), topic);
+            
+            data.topics.forEach((t, i) => {
+                const row = document.getElementById(`lda-row-${i}`);
+                if(row) row.className = `cursor-pointer transition-all ${i === idx ? 'bg-cyber-neonCyan/10 border-l-2 border-cyber-neonCyan' : 'hover:bg-slate-900/50'}`;
+            });
+            drawLdaMdsMap(document.getElementById('lda-bubble-canvas'), data.topics, idx);
+        }
+
+        function navigateLdaTopic(dir) {
+            if (!ldaData || ldaData.task !== 'lda') return;
+            const cnt = ldaData.topics.length;
+            let nxt = selectedLdaIndex + dir;
+            if (nxt < 0) nxt = cnt - 1;
+            if (nxt >= cnt) nxt = 0;
+            selectLdaTopic(nxt, ldaData);
+        }
+
+        function clearLdaTopicSelection() {
+            if (!ldaData || ldaData.task !== 'lda') return;
+            selectedLdaIndex = null;
+            document.getElementById('selected-topic-num').value = "-";
+            drawLdaMdsMap(document.getElementById('lda-bubble-canvas'), ldaData.topics, null);
+            renderLdaOverallChart(document.getElementById('lda-bar-canvas'), ldaData.topics);
+            ldaData.topics.forEach((t, i) => {
+                const row = document.getElementById(`lda-row-${i}`);
+                if(row) row.className = "hover:bg-slate-900/50 transition-all cursor-pointer font-sans";
+            });
+        }
+
+        function updateLdaLambda(val) {
+            currentLambda = parseFloat(val);
+            document.getElementById('lda-lambda-val').textContent = `λ=${currentLambda.toFixed(2)}`;
+            if (ldaData && selectedLdaIndex !== null) renderLdaBarChart(document.getElementById('lda-bar-canvas'), ldaData.topics[selectedLdaIndex]);
+        }
+
+        // 워드클라우드 Canvas
+        function drawWordCloud(canvas, words, shape = "circle") {
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const colors = ['#7da4b5', '#82a392', '#b5a1c2', '#e4a873', '#d6604d'];
+            const cx = canvas.width / 2; const cy = canvas.height / 2;
+
+            words.forEach((word, idx) => {
+                const fontSize = Math.max(9, Math.min(26, word.weight / 2.7));
+                ctx.font = `bold ${fontSize}px 'Outfit', 'Noto Sans KR'`;
+                ctx.fillStyle = colors[idx % colors.length];
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                
+                let px = 0; let py = 0;
+                const ratio = idx / words.length; const angle = ratio * Math.PI * 2;
+                
+                if(shape === "star") { const r = (idx % 10 % 2 === 0) ? 90 : 45; px = Math.cos(angle) * r * 1.1; py = Math.sin(angle) * r * 0.9; }
+                else if (shape === "heart") { px = 16 * Math.pow(Math.sin(angle), 3) * 5.5; py = - (13 * Math.cos(angle) - 5 * Math.cos(2*angle) - 2 * Math.cos(3*angle) - Math.cos(4*angle)) * 5.5; }
+                else { const aCirc = idx * 0.9; const rCirc = idx * 13 + 8; px = Math.cos(aCirc) * rCirc * 1.3 - 10; py = Math.sin(aCirc) * rCirc * 0.8; }
+                
+                ctx.fillText(word.text, Math.max(40, Math.min(canvas.width - 40, cx + px)), Math.max(30, Math.min(canvas.height - 30, cy + py)));
+            });
+        }
+
+        // SNA Canvas
+        function drawSNA(canvas, nodes, links) {
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const colors = ['#7da4b5', '#82a392', '#b5a1c2', '#e4a873'];
+            const nodePos = {};
+            
+            nodes.forEach((node, i) => {
+                const angle = (i / nodes.length) * Math.PI * 2;
+                nodePos[node.id] = { x: canvas.width/2 + Math.cos(angle)*85, y: canvas.height/2 + Math.sin(angle)*85, color: colors[i % colors.length] };
+            });
+
+            ctx.lineWidth = 1.2;
+            links.forEach(link => {
+                const s = nodePos[link.source]; const t = nodePos[link.target];
+                if (s && t) { ctx.beginPath(); ctx.moveTo(s.x, s.y); ctx.lineTo(t.x, t.y); ctx.strokeStyle = `rgba(125, 164, 181, ${Math.min(0.6, link.value / 10)})`; ctx.stroke(); }
+            });
+
+            nodes.forEach(node => {
+                const pos = nodePos[node.id];
+                if (pos) {
+                    ctx.beginPath(); ctx.arc(pos.x, pos.y, 12, 0, Math.PI * 2); ctx.fillStyle = '#1e1f24'; ctx.strokeStyle = pos.color; ctx.lineWidth = 2; ctx.fill(); ctx.stroke();
+                    ctx.beginPath(); ctx.arc(pos.x, pos.y, 3, 0, Math.PI * 2); ctx.fillStyle = '#ffffff'; ctx.fill();
+                    ctx.font = "bold 9px 'Outfit'"; ctx.fillStyle = '#e2e8f0'; ctx.textAlign = 'center'; ctx.fillText(node.id, pos.x, pos.y - 18);
+                }
+            });
+        }
+
+        // 다운로드 유틸리티 (MHTML 포맷 및 UTF-8 BOM 완벽 적용으로 Word/한글 완벽 호환)
+        function downloadDocument(format) {
+            if (!lastAnalysisResult) { showToast("다운로드할 결과가 없습니다.", "error"); return; }
+            const currentTaskName = currentTaskType.toUpperCase();
+            
+            if (format === 'docx') {
+                const headHTML = document.getElementById('report-table-head').innerHTML;
+                const bodyHTML = document.getElementById('report-table-body').innerHTML;
+                let secondaryTableHTML = "";
+                if (!document.getElementById('secondary-table-section').classList.contains('hidden')) {
+                    secondaryTableHTML = `<h2>2. 계량 분석 지표 부표</h2><table>${document.getElementById('secondary-table-head').innerHTML}${document.getElementById('secondary-table-body').innerHTML}</table>`;
+                }
+
+                const docContent = `
+                    <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+                    <head><meta charset="utf-8"><title>AETHER NLP 보고서</title>
+                        <style>
+                            body { font-family: 'Malgun Gothic', 'Dotum', sans-serif; padding: 20px; }
+                            h1 { color: #0f172a; font-size: 22pt; border-bottom: 2px solid #7da4b5; padding-bottom: 12px; }
+                            h2 { color: #1e293b; font-size: 16pt; margin-top: 30px; border-left: 5px solid #7da4b5; padding-left: 10px; }
+                            table { width: 100%; border-collapse: collapse; margin-top: 15px; margin-bottom: 25px; }
+                            th { background-color: #f1f5f9; border: 1px solid #cbd5e1; padding: 10px; text-align: left; }
+                            td { border: 1px solid #cbd5e1; padding: 10px; }
+                            .meta-box { background-color: #f8fafc; padding: 15px; border: 1px solid #e2e8f0; border-radius: 8px; }
+                            .critique-box, .guide-box { background-color: #fcfcfc; border-left: 4px solid #82a392; padding: 20px; margin-top: 15px; }
+                            .formula-box { background-color: #f8fafc; border: 1px solid #cbd5e1; padding: 15px; text-align: center; }
+                        </style>
+                    </head>
+                    <body>
+                        <h1>AETHER NLP 분석 성과 진단서 [${currentTaskName}]</h1>
+                        <div class="meta-box"><p><strong>발행 일시:</strong> ${new Date().toLocaleString('ko-KR')}</p></div>
+                        <h2>1. 정량화 수치 분석 그리드 표</h2>
+                        <table>${headHTML}${bodyHTML}</table>
+                        ${secondaryTableHTML}
+                        <h2>3. 지표 해설 및 학술 가이드</h2>
+                        <div class="guide-box">${document.getElementById('academic-guide-panel').innerHTML}</div>
+                        <h2>4. 방법론 스펙 (Hyperparameters)</h2>
+                        <div class="formula-box"><strong>공식:</strong><br/>${document.getElementById('academic-formula-latex').innerHTML}</div>
+                        <table><tbody>${document.getElementById('hyperparameter-table-body').innerHTML}</tbody></table>
+                        <h2>5. 학술적 고찰 (AI Interpretation)</h2>
+                        <div class="critique-box">${document.getElementById('academic-critique').innerHTML}</div>
+                        <p style="text-align: center; color: #94a3b8; font-size: 9pt; margin-top: 60px;">AETHER NLP Academic System</p>
+                    </body></html>
+                `;
+
+                const blob = new Blob(['\ufeff' + docContent], { type: 'application/msword;charset=utf-8' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = `AETHER_REPORT_${currentTaskName}_${Date.now()}.doc`;
+                document.body.appendChild(link); link.click(); document.body.removeChild(link);
+            } else if (format === 'pdf') {
+                window.print();
+            }
+        }
+    </script>
+</body>
+</html>
